@@ -1164,6 +1164,45 @@ export async function checkAiStatus() {
   return 'Unknown';
 }
 
+export async function getImageSearchModelStatus() {
+  try {
+    return await invoke('get_image_search_model_status');
+  } catch (error) {
+    console.error('getImageSearchModelStatus error:', error);
+  }
+  return null;
+}
+
+export async function setImageSearchModel(model) {
+  try {
+    return await invoke('set_image_search_model', { model });
+  } catch (error) {
+    console.error('setImageSearchModel error:', error);
+    throw error;
+  }
+}
+
+export async function downloadMultilingualImageSearchModel() {
+  try {
+    return await invoke('download_multilingual_image_search_model');
+  } catch (error) {
+    console.error('downloadMultilingualImageSearchModel error:', error);
+    throw error;
+  }
+}
+
+export async function cancelMultilingualImageSearchModelDownload() {
+  try {
+    return await invoke('cancel_multilingual_image_search_model_download');
+  } catch (error) {
+    console.error('cancelMultilingualImageSearchModelDownload error:', error);
+  }
+}
+
+export async function listenImageSearchModelDownloadProgress(callback) {
+  return await listen('image_search_model_download_progress', callback);
+}
+
 // generate embedding
 export async function generateEmbedding(fileId) {
   try {
@@ -1178,6 +1217,18 @@ export async function generateEmbedding(fileId) {
 // search similar images
 export async function searchSimilarImages(params) {
   try {
+    if (params?.searchText) {
+      try {
+        await setImageSearchModel(config.settings.imageSearch?.model || 0);
+      } catch (error) {
+        if (Number(config.settings.imageSearch?.model || 0) !== 1) {
+          throw error;
+        }
+        console.warn('Falling back to default image search model:', error);
+        config.settings.imageSearch.model = 0;
+        await setImageSearchModel(0);
+      }
+    }
     const results = await invoke('search_similar_images', { params });
     if (results) {
       return results;

@@ -965,7 +965,21 @@
     },
     "image_search": {
       "title": "智能搜索",
-      "section_search": "查找相似图片",
+      "search_image": "图片搜索",
+      "search_model": "选择搜索模型",
+      "default_model_hint": "仅支持英文的图片搜索",
+      "multilingual_model_hint": "支持 50+ 语言搜索",
+      "search_model_options": [
+        "默认（英文）",
+        "多语言（50+ 语言）"
+      ],
+      "multilingual_model_download_title": "下载多语言搜索模型？",
+      "multilingual_model_download_message": "多语言图片搜索模型尚未安装。下载后可支持 50+ 语言搜索。",
+      "download": "下载",
+      "downloading_multilingual_model": "正在下载多语言模型",
+      "multilingual_model_download_success": "多语言搜索模型已就绪。重启 Lap 后生效。",
+      "multilingual_model_download_failed": "多语言搜索模型下载失败",
+      "find_similar": "查找相似图片",
       "similarity": "图片相似度",
       "similarity_hint": "越高越相似，结果越少。越低越不相似，结果越多",
       "similarity_options": [

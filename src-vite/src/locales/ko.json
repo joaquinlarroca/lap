@@ -965,7 +965,21 @@
     },
     "image_search": {
       "title": "스마트 검색",
-      "section_search": "유사한 이미지 찾기",
+      "search_image": "이미지 검색",
+      "search_model": "검색 모델 선택",
+      "default_model_hint": "영어 이미지 검색만 지원",
+      "multilingual_model_hint": "50개 이상 언어 검색 지원",
+      "search_model_options": [
+        "기본값(영어)",
+        "다국어(50개 이상 언어)"
+      ],
+      "multilingual_model_download_title": "다국어 검색 모델을 다운로드할까요?",
+      "multilingual_model_download_message": "다국어 이미지 검색 모델이 설치되어 있지 않습니다. 다운로드하면 50개 이상 언어 검색을 사용할 수 있습니다.",
+      "download": "다운로드",
+      "downloading_multilingual_model": "다국어 모델 다운로드 중",
+      "multilingual_model_download_success": "다국어 검색 모델이 준비되었습니다. 사용하려면 Lap을 다시 시작하세요.",
+      "multilingual_model_download_failed": "다국어 검색 모델 다운로드 실패",
+      "find_similar": "유사한 이미지 찾기",
       "similarity": "유사도",
       "similarity_hint": "높을수록 더 비슷하고 결과가 적습니다. 낮을수록 덜 비슷하고 결과가 많습니다",
       "similarity_options": [

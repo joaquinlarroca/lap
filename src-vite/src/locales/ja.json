@@ -965,7 +965,21 @@
     },
     "image_search": {
       "title": "スマート検索",
-      "section_search": "類似画像を探す",
+      "search_image": "画像検索",
+      "search_model": "検索モデルを選択",
+      "default_model_hint": "英語のみの画像検索",
+      "multilingual_model_hint": "50以上の言語で検索できます",
+      "search_model_options": [
+        "デフォルト（英語）",
+        "多言語（50以上の言語）"
+      ],
+      "multilingual_model_download_title": "多言語検索モデルをダウンロードしますか？",
+      "multilingual_model_download_message": "多言語画像検索モデルがインストールされていません。ダウンロードすると50以上の言語で検索できます。",
+      "download": "ダウンロード",
+      "downloading_multilingual_model": "多言語モデルをダウンロード中",
+      "multilingual_model_download_success": "多言語検索モデルの準備ができました。使用するには Lap を再起動してください。",
+      "multilingual_model_download_failed": "多言語検索モデルのダウンロードに失敗しました",
+      "find_similar": "類似画像を探す",
       "similarity": "類似度",
       "similarity_hint": "高いほど類似度が高く、結果は少なくなります。低いほど類似度が低く、結果は多くなります",
       "similarity_options": [

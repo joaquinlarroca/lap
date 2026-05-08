@@ -369,9 +369,61 @@
 
         <!-- Image Search Tab -->
         <div v-else-if="config.settings.tabIndex === 3" class="flex flex-col overflow-hidden space-y-2">
+
+          <!-- image search -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/70">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.image_search.section_search') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.image_search.search_image') }}</span>
+            </div>
+            <div class="flex items-start justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.image_search.search_model') }}</div>
+                <div class="text-xs text-base-content/30">
+                  {{ imageSearchModelHint }}
+                </div>
+              </div>
+              <select
+                class="select select-bordered select-sm min-w-36 shrink-0"
+                :value="config.settings.imageSearch.model"
+                :disabled="isDownloadingMultilingualModel"
+                @change="onImageSearchModelChange"
+              >
+                <option
+                  v-for="option in imageSearchModelOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+            <div v-if="isDownloadingMultilingualModel" class="px-1 pt-1 space-y-1">
+              <div class="flex items-center justify-between text-xs text-base-content/40">
+                <span>{{ $t('settings.image_search.downloading_multilingual_model') }}</span>
+                <span>{{ multilingualModelDownloadSizeText }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <progress
+                  class="progress progress-primary h-1.5 flex-1"
+                  :value="multilingualModelDownloadProgress"
+                  max="100"
+                ></progress>
+                <button
+                  class="btn btn-ghost btn-xs h-6 min-h-0 w-6 p-0 text-base-content/40 hover:text-base-content"
+                  :title="$t('msgbox.cancel')"
+                  :aria-label="$t('msgbox.cancel')"
+                  @click="cancelMultilingualModelDownload"
+                >
+                  <IconClose class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- find similar -->
+          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
+            <div class="flex items-center gap-2 text-base-content/70">
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.image_search.find_similar') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
@@ -384,6 +436,7 @@
             </div>
           </div>
 
+          <!-- face recognition -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/70">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.face_recognition.title') }}</span>
@@ -465,11 +518,23 @@ import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { LogicalSize } from '@tauri-apps/api/dpi';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { emit } from '@tauri-apps/api/event';
-import { open as openDialog } from '@tauri-apps/plugin-dialog';
+import { ask, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { useI18n } from 'vue-i18n';
 import { config, libConfig } from '@/common/config';
-import { getExternalAppDisplayName, getDbStorageDir, changeDbStorageDir, resetDbStorageDir, isFaceIndexing, isUsingCustomDbStorage } from '@/common/api';
-import { isMac, setTheme, SCALE_VALUES } from '@/common/utils';
+import {
+  getExternalAppDisplayName,
+  getDbStorageDir,
+  changeDbStorageDir,
+  resetDbStorageDir,
+  isFaceIndexing,
+  isUsingCustomDbStorage,
+  getImageSearchModelStatus,
+  setImageSearchModel,
+  downloadMultilingualImageSearchModel,
+  cancelMultilingualImageSearchModelDownload,
+  listenImageSearchModelDownloadProgress,
+} from '@/common/api';
+import { formatFileSize, isMac, setTheme, SCALE_VALUES } from '@/common/utils';
 import { useToast } from '@/common/toast';
 import { IconClose, IconRestore } from '@/common/icons';
 
@@ -495,6 +560,13 @@ const showChangeDbStorageDialog = ref(false);
 const showResetDbStorageDialog = ref(false);
 const showBackupDialog = ref(false);
 const showRestoreDialog = ref(false);
+const isDownloadingMultilingualModel = ref(false);
+const isCancelingMultilingualModelDownload = ref(false);
+const multilingualModelDownloadProgress = ref(0);
+const multilingualModelDownloadedBytes = ref(0);
+const multilingualModelTotalBytes = ref(0);
+const isMultilingualModelAvailable = ref(false);
+let unlistenImageSearchModelDownloadProgress: (() => void) | null = null;
 
 const onRestoreDone = () => {
   showRestoreDialog.value = false;
@@ -696,6 +768,46 @@ const similarityOptions = computed(() => {
   return values.map((val, i) => ({ label: options[i], value: i }));
 });
 
+const imageSearchModelOptions = computed(() => {
+  const options = localeMsg.value.settings.image_search.search_model_options || ['Default', 'Multilingual model'];
+  return options.map((label: string, i: number) => ({ label, value: i }));
+});
+
+const imageSearchModelHint = computed(() => {
+  return Number(config.settings.imageSearch.model || 0) === 1
+    ? localeMsg.value.settings.image_search.multilingual_model_hint
+    : localeMsg.value.settings.image_search.default_model_hint;
+});
+
+const multilingualModelDownloadSizeText = computed(() => {
+  const downloaded = multilingualModelDownloadedBytes.value;
+  const total = multilingualModelTotalBytes.value;
+  if (total > 0) {
+    return `${formatFileSize(downloaded)} / ${formatFileSize(total)}`;
+  }
+  return formatFileSize(downloaded);
+});
+
+const syncImageSearchModelStatus = async () => {
+  const status = await getImageSearchModelStatus();
+  if (!status) return;
+
+  isMultilingualModelAvailable.value = Boolean(status.multilingualAvailable);
+  if (Number(config.settings.imageSearch.model || 0) === 1 && !isMultilingualModelAvailable.value) {
+    config.settings.imageSearch.model = 0;
+    await setImageSearchModel(0);
+    return;
+  }
+
+  try {
+    await setImageSearchModel(config.settings.imageSearch.model || 0);
+  } catch (error) {
+    console.error('Failed to activate image search model:', error);
+    config.settings.imageSearch.model = 0;
+    await setImageSearchModel(0);
+  }
+};
+
 // Define the face cluster threshold options
 const faceClusterOptions = computed(() => {
   const options = localeMsg.value.settings.face_recognition?.cluster_threshold_options || 
@@ -704,11 +816,113 @@ const faceClusterOptions = computed(() => {
   return options.map((label: string, i: number) => ({ label, value: i }));
 });
 
+const onImageSearchModelChange = async (event: Event) => {
+  const select = event.target as HTMLSelectElement;
+  const nextModel = Number(select.value || 0);
+  const previousModel = Number(config.settings.imageSearch.model || 0);
+
+  if (nextModel !== 1) {
+    try {
+      await setImageSearchModel(nextModel);
+      config.settings.imageSearch.model = nextModel;
+    } catch (error) {
+      select.value = String(previousModel);
+      toast.error(error?.message || String(error));
+    }
+    return;
+  }
+
+  if (isMultilingualModelAvailable.value) {
+    try {
+      await setImageSearchModel(nextModel);
+      config.settings.imageSearch.model = nextModel;
+    } catch (error) {
+      select.value = String(previousModel);
+      toast.error(error?.message || String(error));
+    }
+    return;
+  }
+
+  select.value = String(previousModel);
+  const shouldDownload = await ask(
+    localeMsg.value.settings.image_search.multilingual_model_download_message,
+    {
+      title: localeMsg.value.settings.image_search.multilingual_model_download_title,
+      kind: 'info',
+      okLabel: localeMsg.value.settings.image_search.download,
+      cancelLabel: localeMsg.value.msgbox?.cancel || 'Cancel',
+    },
+  );
+
+  if (!shouldDownload) {
+    return;
+  }
+
+  await startMultilingualModelDownload(previousModel);
+};
+
+const startMultilingualModelDownload = async (previousModel: number) => {
+  if (isDownloadingMultilingualModel.value) return;
+
+  isDownloadingMultilingualModel.value = true;
+  isCancelingMultilingualModelDownload.value = false;
+  multilingualModelDownloadProgress.value = 0;
+  multilingualModelDownloadedBytes.value = 0;
+  multilingualModelTotalBytes.value = 0;
+
+  try {
+    await downloadMultilingualImageSearchModel();
+    isDownloadingMultilingualModel.value = false;
+    isMultilingualModelAvailable.value = true;
+    await setImageSearchModel(1);
+    config.settings.imageSearch.model = 1;
+    multilingualModelDownloadProgress.value = 100;
+    if (multilingualModelTotalBytes.value > 0) {
+      multilingualModelDownloadedBytes.value = multilingualModelTotalBytes.value;
+    }
+    toast.success(localeMsg.value.settings.image_search.multilingual_model_download_success);
+  } catch (error) {
+    if (isCancelingMultilingualModelDownload.value || String(error).includes('Download canceled')) {
+      isCancelingMultilingualModelDownload.value = false;
+      isDownloadingMultilingualModel.value = false;
+      config.settings.imageSearch.model = previousModel;
+      multilingualModelDownloadProgress.value = 0;
+      multilingualModelDownloadedBytes.value = 0;
+      multilingualModelTotalBytes.value = 0;
+      return;
+    }
+    isDownloadingMultilingualModel.value = false;
+    config.settings.imageSearch.model = previousModel;
+    toast.error(error?.message || localeMsg.value.settings.image_search.multilingual_model_download_failed);
+  }
+};
+
+const cancelMultilingualModelDownload = async () => {
+  if (!isDownloadingMultilingualModel.value) return;
+
+  isCancelingMultilingualModelDownload.value = true;
+  isDownloadingMultilingualModel.value = false;
+  multilingualModelDownloadProgress.value = 0;
+  multilingualModelDownloadedBytes.value = 0;
+  multilingualModelTotalBytes.value = 0;
+  await cancelMultilingualImageSearchModelDownload();
+};
+
 onMounted(async () => {
   window.addEventListener('keydown', handleKeyDown);
   if (typeof config.settings.tabIndex !== 'number' || config.settings.tabIndex < 0 || config.settings.tabIndex > 4) {
     config.settings.tabIndex = 0;
   }
+  if (typeof config.settings.imageSearch.model !== 'number') {
+    config.settings.imageSearch.model = 0;
+  }
+  unlistenImageSearchModelDownloadProgress = await listenImageSearchModelDownloadProgress((event: any) => {
+    const progress = Number(event?.payload?.progress ?? 0);
+    multilingualModelDownloadProgress.value = Math.max(0, Math.min(100, progress));
+    multilingualModelDownloadedBytes.value = Math.max(0, Number(event?.payload?.downloadedBytes ?? 0));
+    multilingualModelTotalBytes.value = Math.max(0, Number(event?.payload?.totalBytes ?? 0));
+  });
+  await syncImageSearchModelStatus();
   applyWindowScale(Number(config.settings.scale || 1));
   dbStorageDir.value = (await getDbStorageDir()) || '';
   hasCustomDbStorage.value = await isUsingCustomDbStorage();
@@ -734,9 +948,16 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  if (isDownloadingMultilingualModel.value) {
+    void cancelMultilingualImageSearchModelDownload();
+  }
   if (gridSizeEmitTimer) {
     clearTimeout(gridSizeEmitTimer);
     gridSizeEmitTimer = null;
+  }
+  if (unlistenImageSearchModelDownloadProgress) {
+    unlistenImageSearchModelDownloadProgress();
+    unlistenImageSearchModelDownloadProgress = null;
   }
   document.documentElement.style.fontSize = '';
   window.removeEventListener('keydown', handleKeyDown);
@@ -852,6 +1073,9 @@ watch(() => config.settings.autoPlayVideo, (newValue) => {
 });
 
 // image search settings
+watch(() => config.settings.imageSearch.model, (newValue) => {
+  emit('settings-imageSearchModel-changed', newValue);
+});
 watch(() => config.settings.imageSearch.thresholdIndex, (newValue) => {
   emit('settings-imageSearchThresholdIndex-changed', newValue);
 });

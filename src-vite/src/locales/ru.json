@@ -965,7 +965,21 @@
     },
     "image_search": {
       "title": "Умный поиск",
-      "section_search": "Поиск похожих изображений",
+      "search_image": "Поиск изображений",
+      "search_model": "Выберите модель поиска",
+      "default_model_hint": "Поиск изображений только на английском",
+      "multilingual_model_hint": "Поиск на 50+ языках",
+      "search_model_options": [
+        "По умолчанию (английский)",
+        "Многоязычная (50+ языков)"
+      ],
+      "multilingual_model_download_title": "Скачать многоязычную модель поиска?",
+      "multilingual_model_download_message": "Многоязычная модель поиска изображений не установлена. Скачайте ее, чтобы включить поиск на 50+ языках.",
+      "download": "Скачать",
+      "downloading_multilingual_model": "Загрузка многоязычной модели",
+      "multilingual_model_download_success": "Многоязычная модель поиска готова. Перезапустите Lap, чтобы использовать ее.",
+      "multilingual_model_download_failed": "Не удалось скачать многоязычную модель поиска",
+      "find_similar": "Поиск похожих изображений",
       "similarity": "Сходство",
       "similarity_hint": "Выше = больше сходства, меньше результатов. Ниже = меньше сходства, больше результатов",
       "similarity_options": [

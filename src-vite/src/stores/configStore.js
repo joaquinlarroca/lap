@@ -131,6 +131,7 @@ export const useConfigStore = defineStore('configStore', {
 
       // image search settings
       imageSearch: {
+        model: 0,                  // 0: default English-only model, 1: multilingual model
         thresholdIndex: 3,         // image search threshold index (default is Low)
         limit: 1000,               // image search limit
       },

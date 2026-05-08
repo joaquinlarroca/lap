@@ -294,6 +294,10 @@ async fn main() {
             t_cmds::get_storage_file_info,
             // ai
             t_cmds::check_ai_status,
+            t_cmds::get_image_search_model_status,
+            t_cmds::set_image_search_model,
+            t_cmds::download_multilingual_image_search_model,
+            t_cmds::cancel_multilingual_image_search_model_download,
             t_cmds::generate_embedding,
             t_cmds::search_similar_images,
             // person (face recognition)

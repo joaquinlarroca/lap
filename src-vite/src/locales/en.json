@@ -965,7 +965,21 @@
     },
     "image_search": {
       "title": "Smart search",
-      "section_search": "Find similar images",
+      "search_image": "Image search",
+      "search_model": "Choose search model",
+      "default_model_hint": "English-only image search",
+      "multilingual_model_hint": "Search across 50+ languages",
+      "search_model_options": [
+        "Default (English)",
+        "Multilingual (50+ languages)"
+      ],
+      "multilingual_model_download_title": "Download multilingual search model?",
+      "multilingual_model_download_message": "The multilingual image search model is not installed. Download it to enable search in 50+ languages.",
+      "download": "Download",
+      "downloading_multilingual_model": "Downloading multilingual model",
+      "multilingual_model_download_success": "Multilingual search model is ready. Restart Lap to use it.",
+      "multilingual_model_download_failed": "Failed to download multilingual search model",
+      "find_similar": "Find similar images",
       "similarity": "Image similarity",
       "similarity_hint": "Higher = more similar, fewer results. Lower = less similar, more results",
       "similarity_options": [

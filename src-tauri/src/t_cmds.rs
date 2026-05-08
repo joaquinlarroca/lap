@@ -20,7 +20,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
-use tauri::State;
+use tauri::{AppHandle, State};
 
 // cancellation token for indexing
 pub struct IndexCancellation(pub Arc<Mutex<HashMap<i64, bool>>>);
@@ -995,6 +995,38 @@ pub fn get_storage_file_info() -> Result<t_utils::FileInfo, String> {
 #[tauri::command]
 pub fn check_ai_status(state: State<t_ai::AiState>) -> String {
     AFile::check_ai_status(&state)
+}
+
+#[tauri::command]
+pub fn get_image_search_model_status(
+    app_handle: AppHandle,
+    state: State<t_ai::AiState>,
+) -> t_ai::ImageSearchModelStatus {
+    let ai_engine = state.0.lock().unwrap();
+    ai_engine.model_status(&app_handle)
+}
+
+#[tauri::command]
+pub fn set_image_search_model(
+    app_handle: AppHandle,
+    state: State<t_ai::AiState>,
+    model: i64,
+) -> Result<t_ai::ImageSearchModelStatus, String> {
+    let mut ai_engine = state.0.lock().unwrap();
+    ai_engine.set_text_model(&app_handle, t_ai::ImageSearchTextModel::from_i64(model))?;
+    Ok(ai_engine.model_status(&app_handle))
+}
+
+#[tauri::command]
+pub async fn download_multilingual_image_search_model(app_handle: AppHandle) -> Result<(), String> {
+    t_ai::download_multilingual_text_model(app_handle).await
+}
+
+#[tauri::command]
+pub async fn cancel_multilingual_image_search_model_download(
+    app_handle: AppHandle,
+) -> Result<(), String> {
+    t_ai::cancel_multilingual_text_model_download(app_handle).await
 }
 
 /// generate embedding for a file

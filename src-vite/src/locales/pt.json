@@ -965,7 +965,21 @@
     },
     "image_search": {
       "title": "Pesquisa inteligente",
-      "section_search": "Encontrar imagens semelhantes",
+      "search_image": "Pesquisa de imagens",
+      "search_model": "Escolher modelo de pesquisa",
+      "default_model_hint": "Pesquisa de imagens somente em inglês",
+      "multilingual_model_hint": "Pesquisa em mais de 50 idiomas",
+      "search_model_options": [
+        "Padrão (inglês)",
+        "Multilíngue (50+ idiomas)"
+      ],
+      "multilingual_model_download_title": "Baixar o modelo de pesquisa multilíngue?",
+      "multilingual_model_download_message": "O modelo de pesquisa de imagens multilíngue não está instalado. Baixe-o para habilitar a pesquisa em mais de 50 idiomas.",
+      "download": "Baixar",
+      "downloading_multilingual_model": "Baixando modelo multilíngue",
+      "multilingual_model_download_success": "O modelo de pesquisa multilíngue está pronto. Reinicie o Lap para usá-lo.",
+      "multilingual_model_download_failed": "Falha ao baixar o modelo de pesquisa multilíngue",
+      "find_similar": "Encontrar imagens semelhantes",
       "similarity": "Similaridade",
       "similarity_hint": "Mais alto = mais similar, menos resultados. Mais baixo = menos similar, mais resultados",
       "similarity_options": [
