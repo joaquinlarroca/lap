@@ -793,6 +793,19 @@ const clickFinalSubFolder = async (albumIdVal: number, folderPathVal: string) =>
     return;
   }
 
+  // If navigating to the album root path, select the root folder directly.
+  // expandFinalFolder returns null for the root path (empty relative path),
+  // so we handle it here instead.
+  if (folderPathVal === album.path) {
+    await expandAlbum(album, true);
+    const rootFolder = album.children?.[0];
+    if (rootFolder) {
+      await clickFolder(album.id, rootFolder);
+      scrollToFolder(rootFolder.id);
+    }
+    return;
+  }
+
   if (selection.selected.value) {  // album is selected
     clickAlbum(album);
   } else {    // album's sub-folder is selected

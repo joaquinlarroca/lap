@@ -29,8 +29,8 @@
           @click="handleTitleClick"
         />
         <div class="overflow-hidden min-w-0 flex-1">
-          <div v-if="contentTitle" class="breadcrumbs p-0 min-h-0 overflow-hidden" data-tauri-drag-region>
-            <ul class="min-w-0 flex-nowrap overflow-hidden">
+          <div v-if="contentTitle" class="breadcrumbs p-0 min-h-0 overflow-hidden">
+            <ul class="min-w-0 flex-nowrap overflow-hidden" data-tauri-drag-region>
               <li v-for="(seg, idx) in titleSegments" :key="idx" class="min-w-0 max-w-full overflow-hidden">
                 <a
                   v-if="idx < titleSegments.length - 1"
@@ -737,7 +737,9 @@ function handleBreadcrumbClick(segmentIndex: number) {
     const targetPath = pathParts.slice(0, pathParts.length - levelsToGoUp).join(separator);
 
     if (sidebarIndex === 0) {
-      libConfig.album.folderPath = targetPath;
+      // Update title immediately for responsive UI, defer folderPath update to
+      // the expand-album-folder event handler so folderId stays consistent.
+      contentTitle.value = segments.slice(0, segmentIndex + 1).join(' > ');
       tauriEmit('expand-album-folder', { albumId: libConfig.album.id, folderPath: targetPath });
     } else {
       libConfig.favorite.folderPath = targetPath;
