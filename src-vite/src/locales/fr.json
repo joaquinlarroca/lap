@@ -278,7 +278,7 @@
       "albums": "Aucun album trouvé. Ajoutez un dossier avec des images ou des vidéos",
       "files": "Aucun fichier trouvé",
       "folder_files": "Ce dossier ne contient aucun fichier",
-      "folder_files_hint": "Essayez un sous-dossier. Lap lit directement les fichiers du système",
+      "folder_files_hint": "Déposez des fichiers ou des images du navigateur ici pour les importer.",
       "folders": "Aucun dossier trouvé",
       "favorite_folders": "Aucun dossier favori trouvé",
       "favorite_folders_hint": "Mettez un dossier en favori dans Albums pour voir ici ses fichiers et sous-dossiers",

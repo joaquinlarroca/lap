@@ -278,7 +278,7 @@
       "albums": "Keine Alben gefunden. Fügen Sie einen Ordner mit Bildern oder Videos hinzu",
       "files": "Keine Dateien gefunden",
       "folder_files": "Dieser Ordner enthält keine Dateien",
-      "folder_files_hint": "Versuchen Sie einen Unterordner. Lap liest Dateien direkt aus dem Dateisystem",
+      "folder_files_hint": "Legen Sie Dateien oder Bilder aus dem Browser hier ab, um sie zu importieren.",
       "folders": "Keine Ordner gefunden",
       "favorite_folders": "Keine Favoritenordner gefunden",
       "favorite_folders_hint": "Favorisieren Sie einen Ordner in Alben, um hier seine Dateien und Unterordner zu sehen",

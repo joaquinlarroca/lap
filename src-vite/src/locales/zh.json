@@ -278,7 +278,7 @@
       "albums": "未找到相册。添加包含图片或视频的文件夹",
       "files": "未找到文件",
       "folder_files": "此文件夹中没有文件",
-      "folder_files_hint": "试试子文件夹。Lap 会直接读取文件系统中的文件",
+      "folder_files_hint": "将文件或浏览器中的图片拖到这里即可导入。",
       "folders": "未找到文件夹",
       "favorite_folders": "未找到收藏的文件夹",
       "favorite_folders_hint": "在相册中收藏一个文件夹，即可在这里查看其文件和子文件夹内容",

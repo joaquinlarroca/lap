@@ -278,7 +278,7 @@
       "albums": "Nenhum álbum encontrado. Adicione uma pasta com imagens ou vídeos",
       "files": "Nenhum arquivo encontrado",
       "folder_files": "Esta pasta não contém arquivos",
-      "folder_files_hint": "Tente uma subpasta. O Lap lê os arquivos diretamente do sistema",
+      "folder_files_hint": "Solte arquivos ou imagens do navegador aqui para importá-los.",
       "folders": "Nenhuma pasta encontrada",
       "favorite_folders": "Nenhuma pasta favorita encontrada",
       "favorite_folders_hint": "Favorite uma pasta em Álbuns para ver aqui seus arquivos e subpastas",

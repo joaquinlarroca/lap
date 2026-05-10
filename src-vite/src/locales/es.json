@@ -278,7 +278,7 @@
       "albums": "No se encontraron álbumes. Añade una carpeta con imágenes o videos",
       "files": "No se encontraron archivos",
       "folder_files": "Esta carpeta no contiene archivos",
-      "folder_files_hint": "Prueba una subcarpeta. Lap lee los archivos directamente del sistema",
+      "folder_files_hint": "Suelta archivos o imágenes del navegador aquí para importarlos.",
       "folders": "No se encontraron carpetas",
       "favorite_folders": "No se encontraron carpetas favoritas",
       "favorite_folders_hint": "Marca una carpeta como favorita en Álbumes para ver aquí sus archivos y subcarpetas",

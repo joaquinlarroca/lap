@@ -278,7 +278,7 @@
       "albums": "No albums found. Add a folder with images or videos",
       "files": "No files found",
       "folder_files": "This folder has no files",
-      "folder_files_hint": "Try a subfolder. Lap reads files directly from the file system",
+      "folder_files_hint": "Drop files or browser images here to import them.",
       "folders": "No folders found",
       "favorite_folders": "No favorite folders found",
       "favorite_folders_hint": "Favorite a folder in Albums to see its files, including subfolders",
