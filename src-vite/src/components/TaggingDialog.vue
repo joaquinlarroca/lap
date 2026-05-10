@@ -1,6 +1,6 @@
 <template>
   <ModalDialog :title="$t('tag.edit_tag')" :width="600" @cancel="clickCancel">
-    <section class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm">
+    <section class="space-y-3">
       <div class="flex items-center gap-2">
         <div 
           :class="[

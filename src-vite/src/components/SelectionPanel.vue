@@ -16,8 +16,8 @@
       </div>
     </div>
 
-    <div class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden space-y-3 flex flex-col bg-base-200/50">
-      <div class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm">
+    <div class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
+      <div class="border-t border-base-content/10 px-1 py-3 space-y-3">
         <div class="flex items-center gap-2 text-base-content/70">
           <span class="font-bold uppercase text-xs tracking-wide">
             {{ $t('info_panel.select_title') }}
@@ -54,20 +54,6 @@
         <div v-if="showSelectionLimitHint" class="mx-2 text-xs font-medium leading-relaxed text-warning">
           {{ $t('info_panel.select_limit_hint', { count: selectionLimit }) }}
         </div>
-        <div class="border-t border-base-content/10"></div>
-
-        <div class="mx-2 pt-1 space-y-2 text-xs text-base-content/50 font-medium">
-          <div class="font-semibold">
-            <span>{{ selectedCount > 0 ? `${$t('toolbar.filter.select_count', { count: selectedCount.toLocaleString() })} (${formatFileSize(selectedSize)})` : $t('info_panel.select_hint') }}</span>
-          </div>
-          <!-- <div>
-            <span>{{ multiSelectTypeBreakdown }}</span>
-          </div>
-          <div v-if="multiSelectDateRange">
-            <span>{{ multiSelectDateRange }}</span>
-          </div> -->
-        </div>
-
         <div v-if="selectedFiles.length > 0">
           <div class="mx-2 flex flex-wrap gap-1.5">
             <button
@@ -98,9 +84,21 @@
             </div>
           </div>
         </div>
+
+        <div class="mx-2 pt-1 space-y-2 text-xs text-base-content/50 font-medium">
+          <div class="font-semibold">
+            <span>{{ selectedCount > 0 ? `${$t('toolbar.filter.select_count', { count: selectedCount.toLocaleString() })} (${formatFileSize(selectedSize)})` : $t('info_panel.select_hint') }}</span>
+          </div>
+          <!-- <div>
+            <span>{{ multiSelectTypeBreakdown }}</span>
+          </div>
+          <div v-if="multiSelectDateRange">
+            <span>{{ multiSelectDateRange }}</span>
+          </div> -->
+        </div>
       </div>
 
-      <div class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm">
+      <div class="border-t border-base-content/10 px-1 py-4 space-y-3">
         <div class="text-base-content/70">
           <span class="font-bold uppercase text-xs tracking-wide">{{ $t('info_panel.action') }}</span>
         </div>
@@ -138,7 +136,6 @@
             </button>
           </div>
         </div>
-        <div class="border-t border-base-content/10"></div>
         <div class="space-y-2">
           <div class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
             {{ $t('info_panel.labels_and_display') }}

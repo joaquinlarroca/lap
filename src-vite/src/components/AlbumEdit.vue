@@ -1,6 +1,6 @@
 <template>
   <ModalDialog :title="isNewAlbum ? $t('album.edit.title_add') : $t('album.edit.title')" @cancel="clickCancel">
-    <section class="rounded-box p-3 bg-base-300/30 border border-base-content/5 shadow-sm">
+    <section>
       <!-- two column grid layout -->
       <div class="w-full grid grid-cols-[80px_1fr] gap-x-4 gap-y-2 items-center text-xs">
         <!-- Folder -->

@@ -21,15 +21,15 @@
       </div>
     </div>
 
-    <div class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden space-y-3 flex flex-col bg-base-200/50">
-      <div v-if="isDedupLoading" class="rounded-box p-4 bg-base-300/30 border border-base-content/5 shadow-sm flex-1 flex items-center justify-center">
+    <div class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
+      <div v-if="isDedupLoading" class="border-t border-base-content/10 p-4 flex-1 flex items-center justify-center">
         <div class="text-center text-base-content/40 space-y-3 max-w-[260px]">
           <span class="loading loading-spinner text-primary w-8 h-8 mx-auto"></span>
           <p class="text-xs font-medium">{{ $t('info_panel.dedup.scanning') }}</p>
         </div>
       </div>
 
-      <div v-else-if="duplicateGroups.length === 0" class="rounded-box p-4 bg-base-300/30 border border-base-content/5 shadow-sm flex-1 flex items-center justify-center">
+      <div v-else-if="duplicateGroups.length === 0" class="border-t border-base-content/10 p-4 flex-1 flex items-center justify-center">
         <div class="text-center text-base-content/40 space-y-3 max-w-[260px]">
           <IconSimilar class="w-8 h-8 mx-auto text-base-content/30" />
           <p class="text-xs font-medium">{{ $t('info_panel.dedup.empty_title') }}</p>
@@ -38,7 +38,7 @@
       </div>
 
       <template v-else>
-        <div class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm">
+        <div class="border-t border-base-content/10 px-1 py-3 space-y-3">
           <div class="flex items-center gap-2 text-base-content/70">
             <span class="font-bold uppercase text-xs tracking-wide">{{ $t('info_panel.dedup.groups_title') }}</span>
           </div>
@@ -50,7 +50,6 @@
           <div v-if="showGroupLimitHint" class="pt-0.5 text-xs font-medium leading-relaxed text-warning">
             {{ $t('info_panel.dedup.group_limit_hint', { count: DEDUP_GROUP_LIMIT }) }}
           </div>
-          <div class="border-t border-base-content/10"></div>
           <div class="space-y-1.5 max-h-44 overflow-y-auto overflow-x-hidden pr-1">
             <button
               v-for="(group, idx) in duplicateGroups"
@@ -77,7 +76,7 @@
           </div>
         </div>
 
-        <div v-if="activeGroup" class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm">
+        <div v-if="activeGroup" class="border-t border-base-content/10 px-1 py-4 space-y-3">
           <div class="flex items-center gap-2 text-base-content/70">
             <span class="font-bold uppercase text-xs tracking-wide">{{ $t('info_panel.dedup.group_label', { index: activeGroupIndex + 1 }) }}</span>
           </div>
@@ -101,8 +100,6 @@
               {{ isMac ? $t('menu.file.move_to_trash') : $t('menu.file.delete') }}{{ selectedDeleteCount > 0 ? `(${formatFileSize(selectedDeleteBytes)})` : '' }}
             </button>
           </div>
-          <div class="border-t border-base-content/10"></div>
-
           <div class="space-y-2.5">
             <button
               v-if="activeGroup.keepItem?.file"

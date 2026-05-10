@@ -25,10 +25,10 @@
     </div>
 
     <!-- Info Content -->
-    <div v-if="fileInfo" class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden space-y-3 flex flex-col bg-base-200/50">
+    <div v-if="fileInfo" class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
 
       <!-- Preview Section -->
-      <div class="group/thumbnail rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm">
+      <div class="group/thumbnail border-t border-base-content/10 px-1 py-3 space-y-3">
         <div
           class="flex items-center gap-2 cursor-pointer text-base-content/70 hover:text-base-content transition-all duration-200 ease-in-out"
           @click.stop="togglePreview"
@@ -101,7 +101,7 @@
       </div>
 
       <!-- File Info Section -->
-      <div class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm">
+      <div class="border-t border-base-content/10 px-1 py-4 space-y-3">
 
         <div class="flex items-center gap-2 cursor-pointer text-base-content/70 hover:text-base-content transition-all duration-200 ease-in-out" 
           @click.stop="toggleBasicInfo"
@@ -295,7 +295,7 @@
       </div>
 
       <!-- Metadata Section -->
-      <div class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm">
+      <div class="border-t border-base-content/10 px-1 py-4 space-y-3">
 
         <div class="flex items-center gap-2 cursor-pointer text-base-content/70 hover:text-base-content" @click.stop="toggleMetadata">
           <IconCameraAperture class="w-4 h-4 " /> 
@@ -354,8 +354,8 @@
 
       <!-- Map View -->
       <div v-if="fileInfo?.gps_latitude && fileInfo?.gps_longitude" 
-        class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm flex flex-col transition-[flex-grow]" 
-        :class="{ 'flex-1 min-h-[300px] flex-shrink-0': showMapPanel }">
+        class="border-t border-base-content/10 px-1 py-4 space-y-3 flex flex-col transition-[flex-grow]" 
+        :class="{ 'flex-1 min-h-[300px] shrink-0': showMapPanel }">
         <div class="flex items-center gap-2 cursor-pointer text-base-content/70 hover:text-base-content shrink-0" @click.stop="toggleMapPanel">
           <IconLocation class="w-4 h-4 " /> 
           <span class="font-bold mr-auto uppercase text-xs tracking-wide">{{ $t('file_info.map') }}</span>
@@ -384,8 +384,8 @@
       </div>
     </div>
 
-    <div v-else class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden space-y-3 flex flex-col bg-base-200/50">
-      <div class="rounded-box p-4 bg-base-300/30 border border-base-content/5 shadow-sm flex-1 flex items-center justify-center">
+    <div v-else class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
+      <div class="p-4 flex-1 flex items-center justify-center">
         <div class="text-center text-base-content/40 space-y-3 max-w-[260px]">
           <IconFile class="w-8 h-8 mx-auto text-base-content/30" />
           <p class="text-xs font-medium">{{ $t('file_info.empty_title') }}</p>
