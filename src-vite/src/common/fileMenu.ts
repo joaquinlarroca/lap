@@ -191,6 +191,7 @@ export const useFileMenuItems = (
       {
         label: localeMsg.value.menu.file.refresh_file_info,
         icon: markRaw(IconRefresh),
+        shortcut: isMac ? '⇧R' : 'Shift+R',
         action: createAction('refresh-file-info')
       },
       {

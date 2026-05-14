@@ -1762,6 +1762,7 @@ async fn process_thumbnail_task(
             task_for_thumb.thumbnail_size,
             false,
             task_for_thumb.duration,
+            None,
         ) {
             Ok(Some(thumb)) if thumb.error_code == 0 => true,
             Ok(Some(_)) => false,

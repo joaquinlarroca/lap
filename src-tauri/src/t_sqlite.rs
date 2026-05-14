@@ -2665,6 +2665,7 @@ impl AThumb {
         thumbnail_size: u32,
         library_id: &str,
         known_duration: Option<u64>,
+        seek_percent: Option<u8>,
     ) -> Result<Option<Self>, String> {
         let (thumb_data, error_code) = match file_type {
             1 => {
@@ -2694,6 +2695,7 @@ impl AThumb {
                                 file_path,
                                 thumbnail_size,
                                 known_duration,
+                                None,
                             ) {
                                 Ok(Some(data)) => (Some(data), 0),
                                 Ok(None) => (None, 1), // empty thumb
@@ -2719,7 +2721,7 @@ impl AThumb {
             }
             2 => {
                 // video
-                match t_video::get_video_thumbnail_sync(file_path, thumbnail_size, known_duration) {
+                match t_video::get_video_thumbnail_sync(file_path, thumbnail_size, known_duration, seek_percent) {
                     Ok(Some(data)) => (Some(data), 0),
                     Ok(None) => (None, 1),
                     Err(_) => (None, 1),
@@ -3023,6 +3025,7 @@ impl AThumb {
         thumbnail_size: u32,
         library_id: &str,
         known_duration: Option<u64>,
+        seek_percent: Option<u8>,
     ) -> Result<Option<Self>, String> {
         if Self::should_use_original_image(file_id, file_type, thumbnail_size) {
             let athumb = Self {
@@ -3048,6 +3051,7 @@ impl AThumb {
             thumbnail_size,
             library_id,
             known_duration,
+            seek_percent,
         ) {
             Ok(Some(athumb)) => athumb,
             _ => Self {
@@ -3084,6 +3088,7 @@ impl AThumb {
         orientation: i32,
         thumbnail_size: u32,
         known_duration: Option<u64>,
+        seek_percent: Option<u8>,
     ) -> Result<Option<Self>, String> {
         let library_id = Self::get_current_library_id();
         Self::create_cache_backed_thumb_for_library(
@@ -3094,6 +3099,7 @@ impl AThumb {
             thumbnail_size,
             &library_id,
             known_duration,
+            seek_percent,
         )
     }
 
@@ -3185,6 +3191,7 @@ impl AThumb {
         thumbnail_size: u32,
         album_id: i64,
         force_regenerate: bool,
+        seek_percent: Option<u8>,
     ) {
         if !Self::try_begin_background_task(file_id, thumbnail_size) {
             return;
@@ -3209,6 +3216,7 @@ impl AThumb {
                     thumbnail_size,
                     force_regenerate,
                     duration,
+                    seek_percent,
                 )
             })
             .await;
@@ -3236,6 +3244,7 @@ impl AThumb {
         thumbnail_size: u32,
         force_regenerate: bool,
         known_duration: Option<u64>,
+        seek_percent: Option<u8>,
     ) -> Result<Option<Self>, String> {
         if force_regenerate {
             let _ = Self::delete(file_id);
@@ -3270,6 +3279,7 @@ impl AThumb {
             orientation,
             thumbnail_size,
             known_duration,
+            seek_percent,
         )
     }
 
@@ -3316,6 +3326,7 @@ impl AThumb {
                 thumbnail_size,
                 library_id,
                 file.duration.map(|d| d as u64),
+                None,
             )?
             .and_then(|thumb| thumb.thumb_data));
         }

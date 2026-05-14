@@ -410,6 +410,7 @@ pub async fn get_video_thumbnail(
     file_path: &str,
     thumbnail_size: u32,
     known_duration: Option<u64>,
+    seek_percent: Option<u8>,
 ) -> Result<Option<Vec<u8>>, String> {
     let probe = probe_json_async(file_path).await.ok();
     let probe_info = probe.as_ref().map(ThumbnailProbeInfo::from_probe);
@@ -422,7 +423,12 @@ pub async fn get_video_thumbnail(
             .and_then(|s| s.parse::<f64>().ok())
             .unwrap_or(0.0) as u64
     };
-    let seek_time = if duration > 10 { duration / 10 } else { 0 };
+    let seek_time = if duration > 10 {
+        let percent = seek_percent.unwrap_or(10).clamp(1, 99) as u64;
+        ((duration * percent) / 100).max(1)
+    } else {
+        0
+    };
     let ffmpeg_threads = thumbnail_ffmpeg_threads().to_string();
     let filter = format!(
         "scale=w={}:h={}:force_original_aspect_ratio=decrease",
@@ -488,10 +494,11 @@ pub fn get_video_thumbnail_sync(
     file_path: &str,
     sz: u32,
     known_duration: Option<u64>,
+    seek_percent: Option<u8>,
 ) -> Result<Option<Vec<u8>>, String> {
     let handle = tokio::runtime::Handle::try_current().map_err(|_| "No runtime handle")?;
     tokio::task::block_in_place(|| {
-        handle.block_on(get_video_thumbnail(file_path, sz, known_duration))
+        handle.block_on(get_video_thumbnail(file_path, sz, known_duration, seek_percent))
     })
 }
 

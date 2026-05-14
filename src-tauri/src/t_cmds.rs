@@ -720,6 +720,7 @@ pub async fn get_file_thumb(
     orientation: i32,
     thumbnail_size: u32,
     force_regenerate: bool,
+    thumbnail_seek_percent: Option<u8>,
 ) -> Result<Option<AThumb>, String> {
     if let Some(thumb) = AThumb::get_thumb_if_available(
         file_id,
@@ -747,6 +748,7 @@ pub async fn get_file_thumb(
         thumbnail_size,
         album_id,
         force_regenerate,
+        thumbnail_seek_percent,
     );
 
     Ok(None)
@@ -794,6 +796,7 @@ pub async fn get_file_thumb_by_id(
         thumbnail_size,
         file.album_id.unwrap_or(0),
         force_regenerate,
+        None,
     );
 
     Ok(None)
@@ -883,6 +886,7 @@ pub async fn get_file_thumbs(
             thumbnail_size,
             album_id,
             force_regenerate,
+            None,
         );
 
         thumbs.push(None);

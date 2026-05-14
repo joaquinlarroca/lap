@@ -780,9 +780,9 @@ export async function editFileComment(fileId, comment) {
 }
 
 // get file thumb
-export async function getFileThumb(fileId, filePath, fileType, orientation, thumbnailSize, forceRegenerate) {
+export async function getFileThumb(fileId, filePath, fileType, orientation, thumbnailSize, forceRegenerate, thumbnailSeekPercent = null) {
   try {
-    const result = await invoke('get_file_thumb', { fileId, filePath, fileType, orientation, thumbnailSize, forceRegenerate });
+    const result = await invoke('get_file_thumb', { fileId, filePath, fileType, orientation, thumbnailSize, forceRegenerate, thumbnailSeekPercent });
     if(result) {
       return result;
     };

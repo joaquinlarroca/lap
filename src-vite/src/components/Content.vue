@@ -1744,6 +1744,12 @@ function handleLocalKeyDown(event: KeyboardEvent) {
       return;
     }
 
+    if (event.code === 'KeyR' && event.shiftKey) {
+      event.preventDefault();
+      void updateFile(fileList.value[selectedItemIndex.value], true);
+      return;
+    }
+
     if (event.code === 'KeyR') {
       event.preventDefault();
       void clickRotate();
@@ -4228,10 +4234,36 @@ const updateFile = async (file: any, showToast = false) => {
 }
 
 // force-update the thumbnail for the file
+const VIDEO_THUMB_REFRESH_PERCENTS = [50, 90, 10];
+const videoThumbRefreshIndex = new Map<number, number>();
+const VIDEO_THUMB_REFRESH_MAP_MAX = 1000;
+
+function getNextVideoThumbnailRefreshPercent(file: any) {
+  if (file?.file_type !== 2 || !file?.id) return null;
+  const fileId = Number(file.id);
+  const currentIndex = videoThumbRefreshIndex.get(fileId) ?? 0;
+  const percent = VIDEO_THUMB_REFRESH_PERCENTS[currentIndex % VIDEO_THUMB_REFRESH_PERCENTS.length];
+  videoThumbRefreshIndex.set(fileId, (currentIndex + 1) % VIDEO_THUMB_REFRESH_PERCENTS.length);
+  // Evict oldest entries when the map grows too large
+  if (videoThumbRefreshIndex.size > VIDEO_THUMB_REFRESH_MAP_MAX) {
+    const first = videoThumbRefreshIndex.keys().next().value;
+    if (first !== undefined) videoThumbRefreshIndex.delete(first);
+  }
+  return percent;
+}
+
 const updateThumbForFile = async (file: any) => {
   file.thumbnail = '';
   clearCachedThumbnailDataUrl(file.id, config.settings.thumbnailSize);
-  const thumb = await getFileThumb(file.id, file.file_path, file.file_type, file.e_orientation || 0, config.settings.thumbnailSize, true);
+  const thumb = await getFileThumb(
+    file.id,
+    file.file_path,
+    file.file_type,
+    file.e_orientation || 0,
+    config.settings.thumbnailSize,
+    true,
+    getNextVideoThumbnailRefreshPercent(file)
+  );
   if (thumb) {
     if (thumb.error_code === 0 || thumb.error_code === 2) {
       file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, true, config.settings.thumbnailSize, file.file_path);

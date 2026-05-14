@@ -457,7 +457,7 @@ pub fn get_image_thumbnail(
                     #[cfg(not(target_os = "macos"))]
                     {
                         if let Ok(Some(data)) =
-                            crate::t_video::get_video_thumbnail_sync(file_path, thumbnail_size, None)
+                            crate::t_video::get_video_thumbnail_sync(file_path, thumbnail_size, None, None)
                         {
                             return Ok(Some(data));
                         }
@@ -1131,7 +1131,7 @@ async fn get_generated_preview_bytes(file_path: &str) -> Result<Option<Vec<u8>>,
         }
         #[cfg(all(not(target_os = "macos"), not(lap_has_libheif)))]
         {
-            return t_video::get_video_thumbnail(file_path, 4096, None).await;
+            return t_video::get_video_thumbnail(file_path, 4096, None, None).await;
         }
     }
 
@@ -1514,7 +1514,7 @@ pub async fn get_file_image_bytes_cached(file_path: &str) -> Result<Vec<u8>, Str
         }
         #[cfg(all(not(target_os = "macos"), not(lap_has_libheif)))]
         {
-            t_video::get_video_thumbnail(file_path, 4096, None).await?
+            t_video::get_video_thumbnail(file_path, 4096, None, None).await?
                 .ok_or_else(|| format!("Failed to resolve HEIC preview image: {}", file_path))?
         }
     } else if cfg!(target_os = "linux") && is_avif_path(file_path) {

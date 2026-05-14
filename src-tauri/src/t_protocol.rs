@@ -114,6 +114,7 @@ pub fn register_protocols(builder: Builder<Wry>) -> Builder<Wry> {
                                     thumbnail_size,
                                     album_id,
                                     false,
+                                    None,
                                 );
                             }
                         }
