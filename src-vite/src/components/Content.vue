@@ -590,7 +590,7 @@ import { platform } from '@tauri-apps/plugin-os';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/common/toast';
 import { useUIStore } from '@/stores/uiStore';
-import { getAlbum, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getFolderFiles, getFolderThumbCount,
+import { getAlbum, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles,
          copyImage, renameFile, moveFile, copyFile, deleteFile, editFileComment, getFileThumb, getFileThumbs, getFileInfo,
          setFileRotate, getFileHasTags, setFileFavorite, setFileRating, getTagsForFile, searchSimilarImages, generateEmbedding, 
          revealPath, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover,
@@ -2733,6 +2733,7 @@ watch(
     libConfig.album.id, libConfig.album.folderId, libConfig.album.folderPath, libConfig.album.selected, // album
     (libConfig.favorite as any).tab, libConfig.favorite.albumId, libConfig.favorite.folderId, libConfig.favorite.folderPath, libConfig.favorite.rating, // favorite files and rating
     libConfig.search.fileName, config.search.fileType, config.search.sortType, config.search.sortOrder, // search and sort 
+    config.settings.showSubfolderFiles,                                            // album folder view
     libConfig.person.id,                                                              // person
     libConfig.calendar.year, libConfig.calendar.month, libConfig.calendar.date,       // calendar
     libConfig.tag.id, libConfig.tag.smartId, (libConfig.tag as any).tab,             // tag
@@ -3231,6 +3232,7 @@ async function updateContent(force = false) {
   // Increment request ID to cancel any previous thumbnail generation and reset queue
   currentThumbRequestId++;
   thumbCount.value = 0;
+  showProgressBar.value = false;
 
   const requestId = ++currentContentRequestId;
 
@@ -3256,67 +3258,14 @@ async function updateContent(force = false) {
             getFileList({ searchAllSubfolders: libConfig.album.folderPath }, requestId);
           } else {                        
             // folder is selected, show files in the folder
-          contentTitle.value = formatFolderBreadcrumb(libConfig.album.folderPath || "", album.path);
-            
-            // Get files from file system (not from DB) and generate thumbnails if needed
-            const [folderFiles, newCount, updatedCount] = await getFolderFiles(libConfig.album.folderId, libConfig.album.folderPath, false);
-            if (requestId !== currentContentRequestId) return;
-            
-            console.log(`getFolderFiles: found ${newCount} new files and updated ${updatedCount} files.`);
-
-            fileList.value = preserveLoadedThumbnails(folderFiles || []);
-            totalFileCount.value = fileList.value.length;
-            totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
-            markDedupSourceUpdated(requestId);
-            restoreInitialSelectionIfNeeded();
-            restoreScrollAfterRefresh();
-            isLoading.value = false;
-            hasLoadedInitialResult.value = true;
-            contentReady.value = true;
-            openImageViewer(0, false, true);
-
-            // Fetch timeline data for the folder
-            currentQueryParams.value = {
-              searchFileType: config.search.fileType,
-              sortType: config.search.sortType,
-              sortOrder: config.search.sortOrder,
-              searchFileName: "",
-              searchAllSubfolders: "",
-              searchFolder: libConfig.album.folderPath || "",
-              startDate: 0,
-              endDate: 0,
-              make: "",
-              model: "",
-              lensMake: "",
-              lensModel: "",
-              locationAdmin1: "",
-              locationName: "",
-              isFavorite: false,
-              rating: -1,
-              tagId: 0,
-              personId: 0,
-            };
-            getQueryTimeLine(currentQueryParams.value).then(data => {
-              if (requestId === currentContentRequestId) timelineData.value = data;
-            });
-
-            // Get the thumbnail count to show progress bar if needed
-            getFolderThumbCount(libConfig.album.folderId).then(count => {
-              if (requestId === currentContentRequestId) {
-                console.log('updateContent - thumbCount:', count);
-                showProgressBar.value = count < fileList.value.length; 
-              }
-            });
-
-            // Only fetch thumbnails for files that don't already have one loaded
-            const filesWithoutThumb = fileList.value.filter((f: any) => !f.thumbnail);
-            const filesAlreadyHaveThumb = fileList.value.length - filesWithoutThumb.length;
-            if (filesAlreadyHaveThumb > 0) {
-              thumbCount.value += filesAlreadyHaveThumb;
-            }
-            if (filesWithoutThumb.length > 0) {
-              getFileListThumb(filesWithoutThumb);
-            }
+            const folderPath = libConfig.album.folderPath || "";
+            contentTitle.value = formatFolderBreadcrumb(folderPath, album.path);
+            getFileList(
+              config.settings.showSubfolderFiles
+                ? { searchAllSubfolders: folderPath }
+                : { searchFolder: folderPath },
+              requestId
+            );
           }
         } else {
           contentTitle.value = "";

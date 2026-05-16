@@ -101,6 +101,7 @@ export const useConfigStore = defineStore('configStore', {
       folderSort: 0,              // folder_sort_options: 0=name asc, 1=name desc, 2=date asc(oldest first), 3=date desc(newest first)
       calendarSort: 0,            // calendar_sort_options: 0=oldest first, 1=newest first
       categorySort: 0,            // category_sort_options: 0=name asc, 1=name desc, 2=count asc, 3=count desc
+      showSubfolderFiles: false,  // show subfolder files (in album folder view)
       
 
       // grid view settings
@@ -207,6 +208,9 @@ export const useConfigStore = defineStore('configStore', {
     },
     setCategorySort(categorySort) {
       this.settings.categorySort = categorySort;
+    },
+    setShowSubfolderFiles(showSubfolderFiles) {
+      this.settings.showSubfolderFiles = showSubfolderFiles;
     },
 
     // video settings

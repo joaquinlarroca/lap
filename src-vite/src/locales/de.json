@@ -863,6 +863,9 @@
     },
     "library": {
       "title": "Bibliothek",
+      "section_album": "Album",
+      "show_subfolder_files": "Dateien aus Unterordnern anzeigen",
+      "show_subfolder_files_hint": "Die Ordneransicht enthält Dateien in Unterordnern",
       "section_sorting": "Sortierung",
       "folder_sort": "Ordner",
       "folder_sort_hint": "Sortierreihenfolge für unter Alben angezeigte Ordner",

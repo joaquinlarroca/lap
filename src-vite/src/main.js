@@ -110,6 +110,9 @@ listen('settings-calendarSort-changed', (event) => {
 listen('settings-categorySort-changed', (event) => {
   config.setCategorySort(event.payload)
 })
+listen('settings-showSubfolderFiles-changed', (event) => {
+  config.setShowSubfolderFiles(event.payload)
+})
 listen('settings-gridSize-changed', (event) => {
   config.setGridSize(event.payload)
 })

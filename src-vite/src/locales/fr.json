@@ -863,6 +863,9 @@
     },
     "library": {
       "title": "Bibliothèque",
+      "section_album": "Album",
+      "show_subfolder_files": "Afficher les fichiers des sous-dossiers",
+      "show_subfolder_files_hint": "La vue dossier inclut les fichiers des sous-dossiers",
       "section_sorting": "Tri",
       "folder_sort": "Dossiers",
       "folder_sort_hint": "Ordre de tri des dossiers affichés sous les albums",

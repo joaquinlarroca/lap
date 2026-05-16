@@ -863,6 +863,9 @@
     },
     "library": {
       "title": "Biblioteca",
+      "section_album": "Álbum",
+      "show_subfolder_files": "Mostrar arquivos de subpastas",
+      "show_subfolder_files_hint": "A visualização de pasta inclui arquivos em subpastas",
       "section_sorting": "Ordenação",
       "folder_sort": "Pastas",
       "folder_sort_hint": "Ordem de classificação das pastas exibidas dentro dos álbuns",

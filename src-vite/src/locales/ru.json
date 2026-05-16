@@ -863,6 +863,9 @@
     },
     "library": {
       "title": "Библиотека",
+      "section_album": "Альбом",
+      "show_subfolder_files": "Показывать файлы из подпапок",
+      "show_subfolder_files_hint": "Вид папки включает файлы из дочерних папок",
       "section_sorting": "Сортировка",
       "folder_sort": "Папки",
       "folder_sort_hint": "Порядок сортировки папок, отображаемых внутри альбомов",

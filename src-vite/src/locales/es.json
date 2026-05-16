@@ -863,6 +863,9 @@
     },
     "library": {
       "title": "Biblioteca",
+      "section_album": "Álbum",
+      "show_subfolder_files": "Mostrar archivos de subcarpetas",
+      "show_subfolder_files_hint": "La vista de carpeta incluye archivos de carpetas secundarias",
       "section_sorting": "Orden",
       "folder_sort": "Carpetas",
       "folder_sort_hint": "Orden de clasificación para las carpetas mostradas dentro de los álbumes",

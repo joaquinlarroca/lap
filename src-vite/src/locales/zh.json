@@ -863,6 +863,9 @@
     },
     "library": {
       "title": "资料库",
+      "section_album": "相册",
+      "show_subfolder_files": "显示子文件夹中的文件",
+      "show_subfolder_files_hint": "文件夹视图包含子文件夹内的文件",
       "section_sorting": "排序",
       "folder_sort": "文件夹",
       "folder_sort_hint": "相册下显示的文件夹排序方式",

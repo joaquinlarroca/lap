@@ -863,6 +863,9 @@
     },
     "library": {
       "title": "ライブラリ",
+      "section_album": "アルバム",
+      "show_subfolder_files": "サブフォルダー内のファイルを表示",
+      "show_subfolder_files_hint": "フォルダービューに子フォルダー内のファイルを含めます",
       "section_sorting": "並べ替え",
       "folder_sort": "フォルダ",
       "folder_sort_hint": "アルバム配下に表示されるフォルダの並び順です",

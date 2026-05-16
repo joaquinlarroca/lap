@@ -863,6 +863,9 @@
     },
     "library": {
       "title": "Library",
+      "section_album": "Album",
+      "show_subfolder_files": "Show files from subfolders",
+      "show_subfolder_files_hint": "Folder view includes files in child folders",
       "section_sorting": "Sorting",
       "folder_sort": "Folders",
       "folder_sort_hint": "Sort order for folders shown under albums",

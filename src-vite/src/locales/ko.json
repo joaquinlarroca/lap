@@ -863,6 +863,9 @@
     },
     "library": {
       "title": "라이브러리",
+      "section_album": "앨범",
+      "show_subfolder_files": "하위 폴더의 파일 표시",
+      "show_subfolder_files_hint": "폴더 보기에서 하위 폴더의 파일을 포함합니다",
       "section_sorting": "정렬",
       "folder_sort": "폴더",
       "folder_sort_hint": "앨범 아래에 표시되는 폴더의 정렬 순서입니다",
