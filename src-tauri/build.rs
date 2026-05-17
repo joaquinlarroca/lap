@@ -199,6 +199,7 @@ fn write_build_info() {
 
 fn build_libraw() {
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
     let is_windows = target_os == "windows";
     const LIBRAW_LINK_NAME: &str = "raw";
     const SHIM_LINK_NAME: &str = "lap_libraw_shim";
@@ -302,6 +303,11 @@ fn build_libraw() {
         }
         println!("cargo:rustc-link-arg=-l{}", SHIM_LINK_NAME);
         println!("cargo:rustc-link-arg=-Wl,--end-group");
+        if target_arch == "aarch64" {
+            // LibRaw's std::atomic usage can emit __aarch64_*_sync symbols
+            // that live in libatomic on Linux AArch64.
+            println!("cargo:rustc-link-lib=atomic");
+        }
     } else if let Some(jpeg) = &jpeg_build {
         // Non-Linux: just link jpeg normally (cc already emitted -lraw & -llap_libraw_shim).
         println!("cargo:rustc-link-lib=static={}", jpeg.lib_name);
