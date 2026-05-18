@@ -61,6 +61,9 @@ sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good
 
 > Screenshot sample images come from [Wikimedia Commons](https://commons.wikimedia.org/).
 
+## Press
+- **Windows Central** — [After testing LAP Photo Manager on Windows 11, I'm convinced it outperforms the built-in Photos app in all the ways that matter](https://www.windowscentral.com/microsoft/windows-11/lap-photo-manager-for-windows-11-is-it-better-than-photos-i-think-so)
+
 ## Why Lap
 
 - **No cloud required**: keep your library on your own disk instead of uploading it to a hosted service.
