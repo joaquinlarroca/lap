@@ -158,6 +158,8 @@ async fn main() {
                 }
             }
 
+            t_utils::start_folder_mtime_sync(_app.handle().clone());
+
             // Open devtools in development mode
             // #[cfg(debug_assertions)] // only include this block in debug builds
             // {
@@ -248,6 +250,7 @@ async fn main() {
             t_cmds::get_query_files,
             t_cmds::get_query_file_position,
             t_cmds::get_folder_files,
+            t_cmds::sync_album_folder_mtimes,
             t_cmds::get_folder_thumb_count,
             t_cmds::edit_image,
             t_cmds::copy_edited_image,

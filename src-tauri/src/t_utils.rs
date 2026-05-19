@@ -5,12 +5,12 @@
  * date:    2024-08-08
  */
 use crate::t_common;
-use crate::t_sqlite::{AFile, Album};
+use crate::t_sqlite::{AFile, AFolder, AThumb, Album};
 use chrono::{DateTime, Local, TimeZone, Utc};
 use once_cell::sync::Lazy;
 use pinyin::ToPinyin;
 use rstar::{AABB, PointDistance, RTree, RTreeObject};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Read;
 #[cfg(target_os = "windows")]
@@ -358,6 +358,7 @@ pub struct FileInfo {
     pub created: Option<i64>,
     pub modified: Option<i64>, // modified date as a timestamp
     pub file_size: i64,
+    pub inode: u64,
 }
 
 impl FileInfo {
@@ -367,6 +368,8 @@ impl FileInfo {
         let path = Path::new(file_path);
         let metadata = fs::metadata(path).map_err(|e| e.to_string())?;
 
+        let inode = file_id(path).unwrap_or(0);
+
         Ok(FileInfo {
             file_path: file_path.to_string(),
             file_name: get_file_name(file_path),
@@ -374,8 +377,22 @@ impl FileInfo {
             created: systemtime_to_timestamp(metadata.created().ok()),
             modified: systemtime_to_timestamp(metadata.modified().ok()),
             file_size: metadata.len() as i64,
+            inode,
         })
     }
+}
+
+/// Return a stable filesystem identifier for rename detection.
+#[cfg(unix)]
+fn file_id(path: &Path) -> Option<u64> {
+    use std::os::unix::fs::MetadataExt;
+    fs::metadata(path).ok().map(|m| m.ino())
+}
+
+#[cfg(windows)]
+fn file_id(path: &Path) -> Option<u64> {
+    use std::os::windows::fs::MetadataExt;
+    fs::metadata(path).ok().and_then(|m| m.file_index().ok())
 }
 
 pub fn authorize_directory_scope(
@@ -1095,6 +1112,474 @@ pub fn get_folder_files(
     }
 
     (files, new_count, updated_count)
+}
+
+#[derive(serde::Serialize, Default)]
+pub struct FolderMtimeSyncResult {
+    pub dirty_folder_count: u32,
+    pub new_folder_count: u32,
+    pub new_file_count: u32,
+    pub updated_file_count: u32,
+    pub deleted_file_count: u32,
+    pub rename_count: u32,
+    pub deleted_folder_count: u32,
+}
+
+struct SyncedFileTask {
+    file_id: i64,
+    file_path: String,
+    file_type: i64,
+    orientation: i32,
+    album_id: i64,
+}
+
+#[derive(Default)]
+struct FolderSyncOutcome {
+    new_file_count: u32,
+    updated_file_count: u32,
+    deleted_file_count: u32,
+    rename_count: u32,
+    tasks: Vec<SyncedFileTask>,
+}
+
+const FOLDER_SYNC_THUMBNAIL_SIZE: u32 = 512;
+
+fn is_path_not_found(err: &str) -> bool {
+    err.contains("No such file or directory") || err.contains("The system cannot find the file specified")
+}
+
+fn remove_missing_folder(folder: &AFolder) -> Result<(), String> {
+    eprintln!("Removing missing folder from DB: {}", folder.path);
+
+    // Clean up thumbnails for all files in this folder before cascading delete.
+    if let Ok(files) = AFile::get_files_by_folder_id(folder.id.unwrap_or(0)) {
+        for file in files {
+            if let Some(id) = file.id {
+                let _ = AThumb::delete(id);
+            }
+        }
+    }
+
+    AFolder::delete_folder(&folder.path)?;
+    Ok(())
+}
+
+/// Guard to ensure only one folder sync runs at a time. When a new sync
+/// starts the previous one is cancelled (its generation is invalidated).
+static FOLDER_SYNC_GENERATION: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(0);
+
+fn sync_generation_valid(generation: u64) -> bool {
+    FOLDER_SYNC_GENERATION.load(std::sync::atomic::Ordering::SeqCst) == generation
+}
+
+pub fn start_folder_mtime_sync(app_handle: tauri::AppHandle) {
+    let generation = FOLDER_SYNC_GENERATION.fetch_add(1, std::sync::atomic::Ordering::SeqCst).wrapping_add(1);
+
+    tauri::async_runtime::spawn(async move {
+        match sync_dirty_folders_by_mtime(generation) {
+            Ok((result, tasks)) => {
+                if !sync_generation_valid(generation) {
+                    return;
+                }
+                for task in tasks {
+                    schedule_synced_file_processing(app_handle.clone(), task);
+                }
+                if result.dirty_folder_count > 0 || result.new_folder_count > 0 {
+                    let _ = app_handle.emit("library-folder-sync-finished", &result);
+                    let _ = app_handle.emit("library-total-refreshed", ());
+                }
+            }
+            Err(e) => eprintln!("folder mtime sync failed: {}", e),
+        }
+    });
+}
+
+/// Check every known folder in the current library using directory mtime.
+/// Dirty folders are synced in the background without touching unrelated views.
+fn sync_dirty_folders_by_mtime(
+    generation: u64,
+) -> Result<(FolderMtimeSyncResult, Vec<SyncedFileTask>), String> {
+    let mut dirty_folder_count = 0u32;
+    let mut new_folder_count = 0u32;
+    let mut new_file_count = 0u32;
+    let mut updated_file_count = 0u32;
+    let mut deleted_file_count = 0u32;
+    let mut rename_count = 0u32;
+    let mut deleted_folder_count = 0u32;
+    let mut tasks = Vec::new();
+    let mut queue = Vec::new();
+
+    for folder in AFolder::get_all()? {
+        if !sync_generation_valid(generation) {
+            return Ok((FolderMtimeSyncResult::default(), Vec::new()));
+        }
+        let info = match FileInfo::new(&folder.path) {
+            Ok(info) => info,
+            Err(e) => {
+                if is_path_not_found(&e) {
+                    if let Err(e2) = remove_missing_folder(&folder) {
+                        eprintln!("sync_dirty_folders_by_mtime: failed to remove missing folder {}: {}", folder.path, e2);
+                    } else {
+                        deleted_folder_count += 1;
+                    }
+                } else {
+                    eprintln!("sync_dirty_folders_by_mtime: failed to stat {} ({})", folder.path, e);
+                }
+                continue;
+            }
+        };
+        if info.modified != folder.modified_at {
+            queue.push((folder, info.modified));
+        }
+    }
+
+    let total_deleted_folder_count = deleted_folder_count;
+
+    while let Some((folder, latest_mtime)) = queue.pop() {
+        if !sync_generation_valid(generation) {
+            return Ok((FolderMtimeSyncResult::default(), Vec::new()));
+        }
+        let folder_id = match folder.id {
+            Some(id) => id,
+            None => continue,
+        };
+        dirty_folder_count += 1;
+
+        let child_folders = scan_new_child_folders(folder.album_id, &folder.path)?;
+        new_folder_count += child_folders.len() as u32;
+        for child in child_folders {
+            queue.push((child, None));
+        }
+
+        let outcome = sync_folder_direct_files(folder_id, folder.album_id, &folder.path, generation)?;
+        new_file_count += outcome.new_file_count;
+        updated_file_count += outcome.updated_file_count;
+        deleted_file_count += outcome.deleted_file_count;
+        rename_count += outcome.rename_count;
+        tasks.extend(outcome.tasks);
+
+        if let Some(mtime) = latest_mtime.or_else(|| FileInfo::new(&folder.path).ok().and_then(|info| info.modified)) {
+            let _ = AFolder::update_column(folder_id, "modified_at", &mtime);
+        }
+    }
+
+    Ok((
+        FolderMtimeSyncResult {
+            dirty_folder_count,
+            new_folder_count,
+            new_file_count,
+            updated_file_count,
+            deleted_file_count,
+            rename_count,
+            deleted_folder_count: total_deleted_folder_count,
+        },
+        tasks,
+    ))
+}
+
+fn scan_new_child_folders(album_id: i64, folder_path: &str) -> Result<Vec<AFolder>, String> {
+    let entries = fs::read_dir(folder_path).map_err(|e| e.to_string())?;
+    let mut new_folders = Vec::new();
+
+    for entry in entries.flatten() {
+        let file_name = entry.file_name();
+        if file_name.to_string_lossy().starts_with('.') {
+            continue;
+        }
+        let Ok(file_type) = entry.file_type() else {
+            continue;
+        };
+        if !file_type.is_dir() {
+            continue;
+        }
+
+        let child_path = entry.path().to_string_lossy().to_string();
+        if AFolder::fetch(&child_path)?.is_some() {
+            continue;
+        }
+        new_folders.push(AFolder::add_to_db(album_id, &child_path)?);
+    }
+
+    Ok(new_folders)
+}
+
+fn sync_folder_direct_files(
+    folder_id: i64,
+    album_id: i64,
+    folder_path: &str,
+    generation: u64,
+) -> Result<FolderSyncOutcome, String> {
+    let scan_time = Utc::now().timestamp_millis();
+    let mut seen_names = HashSet::new();
+    let mut seen_inodes = HashSet::new();
+    let mut new_count = 0u32;
+    let mut updated_count = 0u32;
+    let mut rename_count = 0u32;
+    let mut tasks = Vec::new();
+
+    // Helper to check background cancellation (generation 0 = foreground, never cancels).
+    let is_cancelled = || generation != 0 && !sync_generation_valid(generation);
+
+    // Build a map of file_id → (db_id, db_name) for rename detection.
+    // Use the stored inode from the DB record — this works even when the
+    // file has been renamed and the old path no longer exists on disk.
+    let db_inodes: HashMap<u64, (i64, String)> = {
+        let mut map = HashMap::new();
+        if let Ok(files) = AFile::get_files_by_folder_id(folder_id) {
+            for file in files {
+                if let (Some(id), Some(inode)) = (file.id, file.inode) {
+                    if inode > 0 {
+                        map.insert(inode as u64, (id, file.name.clone()));
+                    }
+                }
+            }
+        }
+        map
+    };
+
+    for entry in WalkDir::new(folder_path)
+        .min_depth(1)
+        .max_depth(1)
+        .into_iter()
+        .filter_entry(|e| !is_hidden(e))
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().is_file())
+    {
+        let path = entry.path();
+        let file_path_str = match path.to_str() {
+            Some(p) => p,
+            None => continue,
+        };
+        let file_name = get_file_name(file_path_str);
+        seen_names.insert(file_name.clone());
+
+        // Record file_id for rename detection.
+        if let Some(fid) = file_id(path) {
+            seen_inodes.insert(fid);
+        }
+
+        if let Some(ftype) = get_file_type(file_path_str) {
+            // Check for rename: a file whose file_id matches a known DB record
+            // with a different name.
+            let renamed: Option<i64> = file_id(path).and_then(|fid| {
+                if fid > 0 {
+                    db_inodes.get(&fid).and_then(|(db_id, db_name)| {
+                        if db_name != &file_name { Some(*db_id) } else { None }
+                    })
+                } else { None }
+            });
+
+            if let Some(db_id) = renamed {
+                if is_cancelled() { return Ok(FolderSyncOutcome::default()); }
+                // Update the existing DB record to point to the new name/path.
+                if let Ok(Some(updated_file)) = AFile::update_file_info(db_id, file_path_str, scan_time) {
+                    rename_count += 1;
+                    if should_process_synced_file(&updated_file, ftype) {
+                        tasks.push(SyncedFileTask {
+                            file_id: db_id,
+                            file_path: file_path_str.to_string(),
+                            file_type: ftype,
+                            orientation: updated_file.e_orientation.unwrap_or(1) as i32,
+                            album_id,
+                        });
+                    }
+                }
+            } else {
+                if is_cancelled() { return Ok(FolderSyncOutcome::default()); }
+                match AFile::add_to_db(folder_id, file_path_str, ftype, scan_time) {
+                    Ok((file, status)) => {
+                        if status == 1 {
+                            new_count += 1;
+                        } else if status == 2 {
+                            updated_count += 1;
+                        }
+                        if should_process_synced_file(&file, ftype) {
+                            if let Some(file_id) = file.id {
+                                tasks.push(SyncedFileTask {
+                                    file_id,
+                                    file_path: file_path_str.to_string(),
+                                    file_type: ftype,
+                                    orientation: file.e_orientation.unwrap_or(1) as i32,
+                                    album_id,
+                                });
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "sync_folder: failed to add file to DB: {} ({})",
+                            file_path_str, e
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    // Delete DB records that are truly gone (name not on disk AND file_id not seen).
+    // Uses the stored inode so rename detection works even when the old path
+    // no longer exists on disk.
+    if is_cancelled() { return Ok(FolderSyncOutcome::default()); }
+    let deleted_count: u32 = {
+        let mut count = 0u32;
+        if let Ok(files) = AFile::get_files_by_folder_id(folder_id) {
+            for file in files {
+                if seen_names.contains(&file.name) { continue; }
+                let still_exists = file.inode
+                    .map(|ino| ino > 0 && seen_inodes.contains(&(ino as u64)))
+                    .unwrap_or(false);
+                if still_exists { continue; }
+                if let Some(id) = file.id {
+                    if is_cancelled() { return Ok(FolderSyncOutcome::default()); }
+                    if AFile::delete(id).is_ok() { count += 1; }
+                }
+            }
+        }
+        count
+    };
+
+    Ok(FolderSyncOutcome {
+        new_file_count: new_count,
+        updated_file_count: updated_count,
+        deleted_file_count: deleted_count,
+        rename_count,
+        tasks,
+    })
+}
+
+/// Sync a single folder if its directory mtime has changed since the last scan.
+/// Returns counts and schedules thumbnail/embedding generation.
+pub fn sync_single_folder(
+    app_handle: &tauri::AppHandle,
+    album_id: i64,
+    folder_id: i64,
+    folder_path: &str,
+) -> Result<FolderMtimeSyncResult, String> {
+    let info = match FileInfo::new(folder_path) {
+        Ok(info) => info,
+        Err(e) => {
+            if is_path_not_found(&e) {
+                // Folder was deleted from disk: clean up DB records.
+                if let Ok(Some(folder)) = AFolder::fetch(folder_path) {
+                    remove_missing_folder(&folder).ok();
+                }
+                return Ok(FolderMtimeSyncResult {
+                    dirty_folder_count: 0,
+                    new_folder_count: 0,
+                    new_file_count: 0,
+                    updated_file_count: 0,
+                    deleted_file_count: 0,
+                    rename_count: 0,
+                    deleted_folder_count: 1,
+                });
+            }
+            return Err(e);
+        }
+    };
+    let folder = AFolder::fetch(folder_path)?.ok_or_else(|| format!("Folder not found: {}", folder_path))?;
+
+    // Validate that the fetched folder matches the caller-provided IDs.
+    if folder.id != Some(folder_id) {
+        return Err(format!(
+            "Folder id mismatch: expected {}, found {:?}",
+            folder_id, folder.id
+        ));
+    }
+    if folder.album_id != album_id {
+        return Err(format!(
+            "Folder album_id mismatch: expected {}, found {}",
+            album_id, folder.album_id
+        ));
+    }
+
+    if info.modified == folder.modified_at {
+        return Ok(FolderMtimeSyncResult {
+            dirty_folder_count: 0,
+            new_folder_count: 0,
+            new_file_count: 0,
+            updated_file_count: 0,
+            deleted_file_count: 0,
+            rename_count: 0,
+            deleted_folder_count: 0,
+        });
+    }
+
+    let child_folders = scan_new_child_folders(album_id, folder_path)?;
+    let new_folder_count = child_folders.len() as u32;
+
+    let outcome = sync_folder_direct_files(folder_id, album_id, folder_path, 0)?; // 0 = foreground, never cancel
+    for task in outcome.tasks {
+        schedule_synced_file_processing(app_handle.clone(), task);
+    }
+
+    let mtime = info.modified;
+    let _ = AFolder::update_column(folder_id, "modified_at", &mtime);
+
+    Ok(FolderMtimeSyncResult {
+        dirty_folder_count: 1,
+        new_folder_count,
+        new_file_count: outcome.new_file_count,
+        updated_file_count: outcome.updated_file_count,
+        deleted_file_count: outcome.deleted_file_count,
+        rename_count: outcome.rename_count,
+        deleted_folder_count: 0,
+    })
+}
+
+fn should_process_synced_file(file: &AFile, file_type: i64) -> bool {
+    if !file.has_thumbnail.unwrap_or(false) {
+        return true;
+    }
+    matches!(file_type, 1 | 3) && !file.has_embedding.unwrap_or(false)
+}
+
+fn schedule_synced_file_processing(app_handle: tauri::AppHandle, task: SyncedFileTask) {
+    tauri::async_runtime::spawn(async move {
+        let file_path_for_thumb = task.file_path.clone();
+        let file_type = task.file_type;
+        let orientation = task.orientation;
+        let file_id = task.file_id;
+        let thumb_result = tauri::async_runtime::spawn_blocking(move || {
+            AThumb::get_or_create_thumb(
+                file_id,
+                &file_path_for_thumb,
+                file_type,
+                orientation,
+                FOLDER_SYNC_THUMBNAIL_SIZE,
+                false,
+                None,
+                None,
+            )
+        })
+        .await;
+
+        if !matches!(thumb_result, Ok(Ok(Some(_)))) {
+            return;
+        }
+
+        let _ = app_handle.emit(
+            "thumbnail_ready",
+            serde_json::json!({
+                "album_id": task.album_id,
+                "file_ids": [task.file_id],
+            }),
+        );
+
+        if !matches!(task.file_type, 1 | 3) {
+            return;
+        }
+
+        let app_handle_for_embedding = app_handle.clone();
+        let file_path = task.file_path.clone();
+        let _ = tauri::async_runtime::spawn_blocking(move || {
+            let ai_state: tauri::State<crate::t_ai::AiState> = app_handle_for_embedding.state();
+            if let Err(e) = AFile::generate_embedding(&ai_state, task.file_id) {
+                eprintln!("Failed to generate embedding for {}: {}", file_path, e);
+            }
+        })
+        .await;
+    });
 }
 
 /// get folder and file count and total file size (include all sub-folders)

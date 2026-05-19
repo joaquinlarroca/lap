@@ -68,6 +68,11 @@ fn get_migrations() -> Vec<Migration> {
             description: "Add folder search exclusion flag",
             sql: "",
         },
+        Migration {
+            version: 6,
+            description: "Add afiles.inode column for rename detection",
+            sql: "",
+        },
     ]
 }
 
@@ -168,6 +173,16 @@ pub fn check_and_migrate(conn: &Connection) -> Result<(), String> {
                         migration.version, e
                     )
                 })?;
+            } else if migration.version == 6 {
+                if !table_has_column(conn, "afiles", "inode")? {
+                    conn.execute("ALTER TABLE afiles ADD COLUMN inode INTEGER", [])
+                        .map_err(|e| {
+                            format!(
+                                "Migration {} failed adding inode: {}",
+                                migration.version, e
+                            )
+                        })?;
+                }
             } else if !migration.sql.trim().is_empty() {
                 conn.execute_batch(migration.sql)
                     .map_err(|e| format!("Migration {} failed: {}", migration.version, e))?;

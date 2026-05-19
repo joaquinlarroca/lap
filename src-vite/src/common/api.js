@@ -661,6 +661,26 @@ export async function getFolderFiles(folderId, folderPath, fromDbOnly) {
   return [null, 0, 0];
 };
 
+// sync a single folder's mtime and DB records with the filesystem
+export async function syncAlbumFolderMtimes(albumId, folderId, folderPath) {
+  try {
+    const result = await invoke('sync_album_folder_mtimes', {
+      albumId,
+      folderId,
+      folderPath,
+    });
+    if (result) {
+      return {
+        ...result,
+        current_folder_synced: Number(result.dirty_folder_count) > 0,
+      };
+    }
+  } catch (error) {
+    console.error('syncAlbumFolderMtimes error:', error);
+  }
+  return null;
+};
+
 // get the thumbnail count of the folder
 export async function getFolderThumbCount(folderId) {
   try {

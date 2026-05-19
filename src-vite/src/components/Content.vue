@@ -598,7 +598,7 @@ import { platform } from '@tauri-apps/plugin-os';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/common/toast';
 import { useUIStore } from '@/stores/uiStore';
-import { getAlbum, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles,
+import { getAlbum, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, syncAlbumFolderMtimes,
          copyImage, renameFile, moveFile, copyFile, deleteFile, deleteFilePermanently, editFileComment, getFileThumb, getFileThumbs, getFileInfo,
          setFileRotate, getFileHasTags, setFileFavorite, setFileRating, getTagsForFile, searchSimilarImages, generateEmbedding, 
          revealPath, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover,
@@ -1118,6 +1118,7 @@ const timelineData = ref<any[]>([]);  // timeline markers for scrollbar
 
 const toast = useToast();
 const shortcutPlatform: ShortcutPlatform = isMac ? 'mac' : 'windows';
+const pendingFolderSyncs = new Map<number, Promise<any>>();
 const shortcut = (actionId: ShortcutActionId) => getShortcutLabel(actionId, shortcutPlatform);
 const ratingActions: Array<{ actionId: ShortcutActionId; rating: number }> = [
   { actionId: 'meta.rating.clear', rating: 0 },
@@ -3313,6 +3314,21 @@ async function updateContent(force = false) {
             // folder is selected, show files in the folder
             const folderPath = libConfig.album.folderPath || "";
             contentTitle.value = formatFolderBreadcrumb(folderPath, album.path);
+            const folderId = Number(libConfig.album.folderId || 0);
+            if (folderId > 0 && folderPath) {
+              // Debounce: if a sync is already in-flight for this folder, reuse it.
+              const existing = pendingFolderSyncs.get(folderId);
+              const syncPromise = existing ?? syncAlbumFolderMtimes(album.id, folderId, folderPath);
+              if (!existing) pendingFolderSyncs.set(folderId, syncPromise);
+              const syncResult = await syncPromise;
+              pendingFolderSyncs.delete(folderId);
+              if (requestId !== currentContentRequestId) return;
+              if (syncResult?.current_folder_synced) {
+                console.log(
+                  `folder sync: ${syncResult.new_file_count} new, ${syncResult.updated_file_count} updated, ${syncResult.deleted_file_count} deleted, ${syncResult.rename_count || 0} renamed`
+                );
+              }
+            }
             getFileList(
               config.settings.showSubfolderFiles
                 ? { searchAllSubfolders: folderPath }
@@ -4158,6 +4174,12 @@ const onTrashFile = async () => {
 
     await refreshAffectedAlbums(Array.from(affectedAlbumIds));
     await refreshLibraryTotalCount();
+
+    // Refresh timeline markers so date group headers stay in sync
+    // with the updated file list after deletion.
+    getQueryTimeLine(currentQueryParams.value).then(data => {
+      timelineData.value = data;
+    });
 
     if (deletedFileIds.length > 0) {
       tauriEmit('files-deleted', {

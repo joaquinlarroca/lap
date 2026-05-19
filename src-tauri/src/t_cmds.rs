@@ -149,7 +149,9 @@ pub async fn switch_library(app_handle: tauri::AppHandle, id: String) -> Result<
     .await
     .map_err(|e| format!("Failed to join switch library task: {}", e))??;
 
-    t_utils::restore_album_scopes(&app_handle)
+    t_utils::restore_album_scopes(&app_handle)?;
+    t_utils::start_folder_mtime_sync(app_handle);
+    Ok(())
 }
 
 /// get library statistics
@@ -499,6 +501,17 @@ pub fn get_folder_files(
         folder_path,
         from_db_only.unwrap_or(false),
     )
+}
+
+/// sync a single folder's mtime and DB records with the filesystem
+#[tauri::command]
+pub fn sync_album_folder_mtimes(
+    app_handle: tauri::AppHandle,
+    album_id: i64,
+    folder_id: i64,
+    folder_path: &str,
+) -> Result<crate::t_utils::FolderMtimeSyncResult, String> {
+    crate::t_utils::sync_single_folder(&app_handle, album_id, folder_id, folder_path)
 }
 
 /// get the thumbnail count of the folder

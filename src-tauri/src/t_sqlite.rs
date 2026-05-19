@@ -404,7 +404,7 @@ impl AFolder {
             name: file_info.file_name,
             path: folder_path.to_string(),
             created_at: file_info.created,
-            modified_at: file_info.modified,
+            modified_at: Some(0), // force first sync
             is_favorite: None,
             is_excluded_from_search: Some(false),
         })
@@ -454,6 +454,26 @@ impl AFolder {
             .optional()
             .map_err(|e| e.to_string())?;
         Ok(result)
+    }
+
+    /// fetch all folder rows in the current library database
+    pub fn get_all() -> Result<Vec<Self>, String> {
+        let conn = open_conn()?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, album_id, name, path, created_at, modified_at, is_favorite, COALESCE(is_excluded_from_search, 0)
+                FROM afolders",
+            )
+            .map_err(|e| e.to_string())?;
+        let rows = stmt
+            .query_map(params![], Self::from_row)
+            .map_err(|e| e.to_string())?;
+
+        let mut folders = Vec::new();
+        for folder in rows {
+            folders.push(folder.map_err(|e| e.to_string())?);
+        }
+        Ok(folders)
     }
 
     /// insert a folder into db
@@ -628,6 +648,7 @@ pub struct AFile {
     pub format_label: Option<String>, // normalized file format label (from file content)
     pub created_at: Option<i64>,      // file create timestamp
     pub modified_at: Option<i64>,     // file modified timestamp
+    pub inode: Option<i64>,           // filesystem inode (for rename detection)
     pub taken_date: Option<i64>,      // taken date timestamp (e_date_time || modified_at)
 
     // image/video
@@ -1028,6 +1049,7 @@ impl AFile {
             format_label,
             created_at: file_info.created,
             modified_at: file_info.modified,
+            inode: Some(file_info.inode as i64),
 
             taken_date,
             width: e_orientation
@@ -1333,15 +1355,15 @@ impl AFile {
         let result = conn.execute(
             "INSERT INTO afiles (
                 folder_id, 
-                name, name_pinyin, size, file_type, format_label, created_at, modified_at, 
+                name, name_pinyin, size, file_type, format_label, created_at, modified_at, inode,
                 taken_date,
                 width, height, duration,
                 is_favorite, rating, rotate, comments, has_tags,
                 e_make, e_model, e_date_time, e_software, e_artist, e_copyright, e_description, e_lens_make, e_lens_model, e_exposure_bias, e_exposure_time, e_f_number, e_focal_length, e_iso_speed, e_flash, e_orientation,
                 gps_latitude, gps_longitude, gps_altitude, geo_name, geo_admin1, geo_admin2, geo_cc,
                 last_scan_time
-            ) 
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35, ?36, ?37, ?38, ?39, ?40, ?41)",
+            )
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35, ?36, ?37, ?38, ?39, ?40, ?41, ?42)",
             params![
                 self.folder_id,
 
@@ -1352,6 +1374,7 @@ impl AFile {
                 self.format_label,
                 self.created_at,
                 self.modified_at,
+                self.inode,
 
                 self.taken_date,
 
@@ -1400,14 +1423,14 @@ impl AFile {
         let conn = open_conn()?;
         let result = conn.execute(
             "UPDATE afiles SET
-                name = ?1, name_pinyin = ?2, size = ?3, file_type = ?4, format_label = ?5, created_at = ?6, modified_at = ?7,
-                taken_date = ?8,
-                width = ?9, height = ?10, duration = ?11,
-                rating = ?12,
-                e_make = ?13, e_model = ?14, e_date_time = ?15, e_software = ?16, e_artist = ?17, e_copyright = ?18, e_description = ?19, e_lens_make = ?20, e_lens_model = ?21, e_exposure_bias = ?22, e_exposure_time = ?23, e_f_number = ?24, e_focal_length = ?25, e_iso_speed = ?26, e_flash = ?27, e_orientation = ?28,
-                gps_latitude = ?29, gps_longitude = ?30, gps_altitude = ?31, geo_name = ?32, geo_admin1 = ?33, geo_admin2 = ?34, geo_cc = ?35,
-                last_scan_time = ?36
-            WHERE id = ?37",
+                name = ?1, name_pinyin = ?2, size = ?3, file_type = ?4, format_label = ?5, created_at = ?6, modified_at = ?7, inode = ?8,
+                taken_date = ?9,
+                width = ?10, height = ?11, duration = ?12,
+                rating = ?13,
+                e_make = ?14, e_model = ?15, e_date_time = ?16, e_software = ?17, e_artist = ?18, e_copyright = ?19, e_description = ?20, e_lens_make = ?21, e_lens_model = ?22, e_exposure_bias = ?23, e_exposure_time = ?24, e_f_number = ?25, e_focal_length = ?26, e_iso_speed = ?27, e_flash = ?28, e_orientation = ?29,
+                gps_latitude = ?30, gps_longitude = ?31, gps_altitude = ?32, geo_name = ?33, geo_admin1 = ?34, geo_admin2 = ?35, geo_cc = ?36,
+                last_scan_time = ?37
+            WHERE id = ?38",
             params![
                 file.name,
                 file.name_pinyin,
@@ -1416,6 +1439,7 @@ impl AFile {
                 file.format_label,
                 file.created_at,
                 file.modified_at,
+                file.inode,
 
                 file.taken_date,
 
@@ -1512,7 +1536,7 @@ impl AFile {
     fn build_base_query() -> String {
         String::from(
             "SELECT a.id, a.folder_id, 
-                a.name, a.name_pinyin, a.size, a.file_type, a.format_label, a.created_at, a.modified_at, 
+                a.name, a.name_pinyin, a.size, a.file_type, a.format_label, a.created_at, a.modified_at, a.inode,
                 a.taken_date,
                 a.width, a.height, a.duration,
                 a.is_favorite, a.rating, a.rotate, a.comments, a.has_tags,
@@ -1543,54 +1567,55 @@ impl AFile {
             format_label: row.get(6)?,
             created_at: row.get(7)?,
             modified_at: row.get(8)?,
+            inode: row.get(9)?,
 
-            taken_date: row.get(9)?,
+            taken_date: row.get(10)?,
 
-            width: row.get(10)?,
-            height: row.get(11)?,
-            duration: row.get(12)?,
+            width: row.get(11)?,
+            height: row.get(12)?,
+            duration: row.get(13)?,
 
-            is_favorite: row.get(13)?,
-            rating: row.get(14)?,
-            rotate: row.get(15)?,
-            comments: row.get(16)?,
-            has_tags: row.get(17)?,
+            is_favorite: row.get(14)?,
+            rating: row.get(15)?,
+            rotate: row.get(16)?,
+            comments: row.get(17)?,
+            has_tags: row.get(18)?,
 
-            e_make: row.get(18)?,
-            e_model: row.get(19)?,
-            e_date_time: row.get(20)?,
-            e_software: row.get(21)?,
-            e_artist: row.get(22)?,
-            e_copyright: row.get(23)?,
-            e_description: row.get(24)?,
-            e_lens_make: row.get(25)?,
-            e_lens_model: row.get(26)?,
-            e_exposure_bias: row.get(27)?,
-            e_exposure_time: row.get(28)?,
-            e_f_number: row.get(29)?,
-            e_focal_length: row.get(30)?,
-            e_iso_speed: row.get(31)?,
-            e_flash: row.get(32)?,
-            e_orientation: row.get(33)?,
+            e_make: row.get(19)?,
+            e_model: row.get(20)?,
+            e_date_time: row.get(21)?,
+            e_software: row.get(22)?,
+            e_artist: row.get(23)?,
+            e_copyright: row.get(24)?,
+            e_description: row.get(25)?,
+            e_lens_make: row.get(26)?,
+            e_lens_model: row.get(27)?,
+            e_exposure_bias: row.get(28)?,
+            e_exposure_time: row.get(29)?,
+            e_f_number: row.get(30)?,
+            e_focal_length: row.get(31)?,
+            e_iso_speed: row.get(32)?,
+            e_flash: row.get(33)?,
+            e_orientation: row.get(34)?,
 
-            gps_latitude: row.get(34)?,
-            gps_longitude: row.get(35)?,
-            gps_altitude: row.get(36)?,
-            geo_name: row.get(37)?,
-            geo_admin1: row.get(38)?,
-            geo_admin2: row.get(39)?,
-            geo_cc: row.get(40)?,
+            gps_latitude: row.get(35)?,
+            gps_longitude: row.get(36)?,
+            gps_altitude: row.get(37)?,
+            geo_name: row.get(38)?,
+            geo_admin1: row.get(39)?,
+            geo_admin2: row.get(40)?,
+            geo_cc: row.get(41)?,
 
             file_path: Some(t_utils::get_file_path(
-                row.get::<_, String>(41)?.as_str(),
+                row.get::<_, String>(42)?.as_str(),
                 row.get::<_, String>(2)?.as_str(),
             )),
-            album_id: row.get(42)?,
-            album_name: row.get(43)?,
-            has_thumbnail: row.get::<_, Option<i64>>(44)?.map(|v| v == 1),
-            has_embedding: row.get::<_, Option<i64>>(45)?.map(|v| v == 1),
-            has_faces: row.get::<_, Option<i32>>(46)?,
-            last_scan_time: row.get(47)?,
+            album_id: row.get(43)?,
+            album_name: row.get(44)?,
+            has_thumbnail: row.get::<_, Option<i64>>(45)?.map(|v| v == 1),
+            has_embedding: row.get::<_, Option<i64>>(46)?.map(|v| v == 1),
+            has_faces: row.get::<_, Option<i32>>(47)?,
+            last_scan_time: row.get(48)?,
         })
     }
 
@@ -1780,6 +1805,8 @@ impl AFile {
         new_file_info.rotate = old_file_info.rotate;
         new_file_info.comments = old_file_info.comments;
         new_file_info.has_tags = old_file_info.has_tags;
+        new_file_info.has_thumbnail = old_file_info.has_thumbnail;
+        new_file_info.has_embedding = old_file_info.has_embedding;
         new_file_info.last_scan_time = Some(last_scan_time);
 
         // update the file info
@@ -4555,6 +4582,7 @@ fn create_db_internal() -> Result<(), String> {
             format_label TEXT,
             created_at INTEGER,
             modified_at INTEGER,
+            inode INTEGER,
             taken_date INTEGER,
             width INTEGER,
             height INTEGER,
