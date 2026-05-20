@@ -459,16 +459,6 @@
     />
   </div>
 
-  <!-- edit image -->
-  <EditImage
-    v-if="showEditImage"
-    :fileInfo="fileList[selectedItemIndex]"
-    :initialImageSrc="editImageInitialImageSrc"
-    :initialTab="editImageInitialTab"
-    @success="onFileSaved(true, $event)"
-    @failed="onFileSaved(false)"
-    @cancel="showEditImage = false"
-  />
 
   <!-- rename -->
   <MessageBox
@@ -631,7 +621,6 @@ import IndexRecoveryDialog from '@/components/IndexRecoveryDialog.vue';
 import MoveTo from '@/components/MoveTo.vue';
 import TButton from '@/components/TButton.vue';
 import TaggingDialog from '@/components/TaggingDialog.vue';
-import EditImage from '@/components/EditImage.vue';
 import FileInfo from '@/components/FileInfo.vue';
 import DedupPane from '@/components/DedupPane.vue';
 import SelectionPanel from '@/components/SelectionPanel.vue';
@@ -906,9 +895,6 @@ const showRenameMsgbox = ref(false);  // show rename message box
 const renamingFileName = ref<{name?: string, ext?: string}>({}); // extract the file name to {name, ext}
 
 const showMoveTo = ref(false);
-const showEditImage = ref(false);
-const editImageInitialImageSrc = ref('');
-const editImageInitialTab = ref<'edit' | 'adjust'>('edit');
 const showCopyTo = ref(false);
 const showTrashMsgbox = ref(false);
 const permanentDeleteChecked = ref(false);
@@ -1276,6 +1262,7 @@ const backupState = ref<any>(null);
 
 let unlistenKeydown: () => void;
 let unlistenImageViewer: () => void;
+let unlistenImageEditor: (() => void) | null = null;
 let unlistenDragDrop: () => void;
 let unlistenFaceIndexProgress: (() => void) | null = null;
 let unlistenLibraryTotalRefreshed: (() => void) | null = null;
@@ -1309,6 +1296,7 @@ onBeforeUnmount(() => {
   }
   if (unlistenKeydown) unlistenKeydown();
   if (unlistenImageViewer) unlistenImageViewer();
+  if (unlistenImageEditor) unlistenImageEditor();
   if (unlistenLibraryTotalRefreshed) unlistenLibraryTotalRefreshed();
 });
 
@@ -1494,11 +1482,7 @@ function handleItemAction(payload: { action: string, index: number }) {
   const actionMap = {
     'open': () => openImageViewer(selectedItemIndex.value, true),
     'print': () => void openPrintWindow(selectedItemIndex.value),
-    'edit': () => {
-      editImageInitialTab.value = config.imageEditor.tab === 'adjust' ? 'adjust' : 'edit';
-      editImageInitialImageSrc.value = getCurrentPreviewImageSrc();
-      showEditImage.value = true;
-    },
+    'edit': () => void openImageEditor(selectedItemIndex.value),
     'open-external-app': () => {
       void openSelectedFileInExternalApp();
     },
@@ -1930,9 +1914,7 @@ const handleKeyDown = (e: any) => {
   } else if (matchesShortcut('file.editImage', event, shortcutPlatform)) {
     const file = fileList.value[selectedItemIndex.value];
     if (file && (file.file_type === 1 || file.file_type === 3)) {
-      editImageInitialTab.value = config.imageEditor.tab === 'adjust' ? 'adjust' : 'edit';
-      editImageInitialImageSrc.value = getCurrentPreviewImageSrc();
-      showEditImage.value = true;
+      void openImageEditor(selectedItemIndex.value);
     }
   } else if (matchesShortcut('file.moveTo', event, shortcutPlatform)) {
     showMoveTo.value = true;
@@ -2536,6 +2518,15 @@ onMounted( async() => {
     }
   });
 
+  unlistenImageEditor = await listen('message-from-image-editor', async (event: any) => {
+    const { type, saveAsNew, filePath } = event.payload as any;
+    if (type === 'success') {
+      await onFileSaved(true, { saveAsNew, filePath });
+    } else if (type === 'failed') {
+      await onFileSaved(false);
+    }
+  });
+
   // Indexing listeners
   unlistenIndexProgress = await listenIndexProgress(async (event: any) => {
     const { album_id, phase, current, discovered, processed, search_ready, total, search_total, current_size, failed } = event.payload;
@@ -2715,6 +2706,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleLocalKeyDown);
   // unlisten
   unlistenImageViewer();
+  if (unlistenImageEditor) unlistenImageEditor();
   if (unlistenKeydown) unlistenKeydown();
   if (unlistenTriggerNextAlbum) unlistenTriggerNextAlbum();
   if (unlistenIndexProgress) unlistenIndexProgress();
@@ -3811,7 +3803,6 @@ function handleTitleClick() {
 // update file state after a save from either FileInfo or EditImage
 const onFileSaved = async (success: boolean, payload: SavedFilePayload = {}) => {
   if (success) {
-    showEditImage.value = false;
     if (payload.saveAsNew && payload.filePath) {
       clearPreviewPreloadCache(payload.filePath);
       const inserted = await indexAndInsertSavedFile(payload.filePath);
@@ -5208,6 +5199,49 @@ async function openImageViewer(
     }
     videoRef.value?.pause();  // pause video playing in preview pane
   }
+}
+
+async function openImageEditor(index: number) {
+  const file = fileList.value[index];
+  if (!file) return;
+  const fileId = Number(file.id || 0);
+  if (fileId <= 0) return;
+
+  const webViewLabel = 'imageeditor';
+  const imageWindow = await WebviewWindow.getByLabel(webViewLabel);
+  if (imageWindow) {
+    await imageWindow.emit('update-file', { fileId });
+    imageWindow.show();
+    imageWindow.setFocus();
+    return;
+  }
+
+  const newWindow = new WebviewWindow(webViewLabel, {
+    url: `/image-editor?fileId=${fileId}`,
+    title: 'Image Editor',
+    width: 1100,
+    height: 700,
+    minWidth: 800,
+    minHeight: 500,
+    resizable: true,
+    maximizable: false,
+    visible: false,
+    transparent: true,
+    decorations: isMac,
+    ...(isMac && {
+      titleBarStyle: 'overlay',
+      hiddenTitle: true,
+      minimizable: false,
+    }),
+  });
+
+  newWindow.once('tauri://created', () => {
+    newWindow?.show();
+  });
+
+  newWindow.once('tauri://close-requested', () => {
+    newWindow?.close();
+  });
 }
 
 async function openPrintWindow(index: number) {

@@ -5,6 +5,7 @@
   "windows": [
     "main",
     "imageviewer",
+    "imageeditor",
     "settings",
     "print"
   ],
@@ -44,6 +45,7 @@
     "core:window:allow-start-dragging",
     "core:webview:allow-print",
     "core:webview:allow-create-webview-window",
+    "core:webview:allow-webview-close",
     "shell:allow-open",
     "dialog:allow-open",
     "os:allow-platform",

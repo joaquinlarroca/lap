@@ -13,6 +13,11 @@ const routes = [
     component: () => import('@/views/ImageViewer.vue'),
   },
   {
+    path: '/image-editor',
+    name: 'ImageEditor',
+    component: () => import('@/views/ImageEditor.vue'),
+  },
+  {
     path: '/settings',
     name: 'Settings',
     component: () => import('@/views/Settings.vue'),

@@ -1,17 +1,29 @@
 <template>
 
-  <ModalDialog :title="`${$t('msgbox.image_editor.title')} - ${shortenFilename(props.fileInfo.name, 32)}`" :width="1040" @cancel="clickCancel">
-    <div class="h-[560px] flex gap-4 select-none">
-      <div class="flex-1 min-w-0 h-full flex flex-col items-center gap-3">
-        <div class="w-full flex items-start">
-          <div
-            ref="containerRef"
-            class="relative w-full aspect-4/3 max-h-full rounded-box overflow-hidden border border-base-content/5 bg-base-300/30 shadow-sm cursor-default"
-            @pointerdown="handlePreviewPointerDown"
-            @pointerup="handlePreviewPointerUp"
-            @pointerleave="handlePreviewPointerUp"
-            @pointercancel="handlePreviewPointerUp"
-          >
+  <div class="w-screen h-screen flex flex-col overflow-hidden bg-base-300 text-base-content/70">
+    <!-- Title Bar -->
+    <div
+      class="h-10 shrink-0 flex items-center justify-between px-4 select-none"
+      :class="isMac ? 'pl-20' : ''"
+      data-tauri-drag-region
+    >
+      <div class="text-sm font-medium text-base-content/70 truncate">
+        {{ $t('msgbox.image_editor.title') }} - {{ shortenFilename(fileInfo?.name || '', 32) }}
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div v-if="fileInfo" class="flex-1 flex gap-3 p-3 min-h-0">
+      <!-- Left: Image Preview -->
+      <div class="flex-1 min-w-0 flex flex-col items-center justify-center gap-2">
+        <div
+          ref="containerRef"
+          class="relative w-full flex-1 rounded-box overflow-hidden border border-base-content/5 bg-base-300/30 shadow-sm cursor-default"
+          @pointerdown="handlePreviewPointerDown"
+          @pointerup="handlePreviewPointerUp"
+          @pointerleave="handlePreviewPointerUp"
+          @pointercancel="handlePreviewPointerUp"
+        >
             <transition name="fade">
               <div v-if="isProcessing" class="absolute inset-0 z-50 flex items-center justify-center bg-base-100/55 backdrop-blur-sm">
                 <span class="loading loading-dots text-primary"></span>
@@ -70,6 +82,7 @@
             <div v-if="cropStatus === 1 || cropApplied"
               :class="[
                 cropStatus === 1 ? 'crop-box-active' : 'crop-box-done',
+                isResizing ? 'no-transition' : '',
                 cropStatus === 1
                   ? (
                     cropBoxFixed
@@ -107,25 +120,15 @@
                 <div class="drag-handle bottom-right" @mousedown.stop="startDrag('bottom-right', $event)"></div>
               </template>
             </div>
-          </div>
         </div>
 
-        <TButton
-          v-if="activeEditorTab === 'adjust'"
-          buttonSize="small"
-          :icon="IconSplitOn"
-          :selected="showDiffPreview && canShowDiffPreview"
-          :disabled="!hasAdjustmentChanges"
-          :tooltip="$t('msgbox.image_editor.compare_view')"
-          @click="toggleDiffPreview"
-        />
       </div>
 
       <div
-        class="w-[268px] flex flex-col gap-3 overflow-y-auto"
+        class="w-[320px] flex flex-col gap-3 overflow-y-auto"
         :class="isProcessing ? 'pointer-events-none opacity-60' : ''"
       >
-        <div class="border-b border-base-content/5 pb-1">
+        <div class="sticky top-0 z-10 bg-base-300 border-b border-base-content/5 pb-1">
           <div role="tablist" class="sidebar-header-tabs">
             <button
               role="tab"
@@ -347,16 +350,32 @@
         <section class="rounded-box p-3 space-y-2 border border-base-content/5 shadow-sm bg-base-300/30">
           <div class="flex items-center justify-between gap-2">
             <span class="text-[11px] font-bold uppercase tracking-[0.22em] text-base-content/35">{{ $t('msgbox.image_editor.presets.title') }}</span>
-            <TButton
-              buttonSize="small"
-              :icon="IconRestore"
-              :disabled="!hasAdjustmentChanges"
-              :tooltip="$t('msgbox.image_editor.reset')"
-              @click.stop="resetAdjustments"
-            />
+            <div class="flex items-center gap-1">
+              <TButton
+                buttonSize="small"
+                :icon="IconSplitOn"
+                :selected="showDiffPreview && canShowDiffPreview"
+                :disabled="!hasAdjustmentChanges"
+                :tooltip="$t('msgbox.image_editor.compare_view')"
+                @click="toggleDiffPreview"
+              />
+              <TButton
+                buttonSize="small"
+                :icon="IconRestore"
+                :disabled="!hasAdjustmentChanges"
+                :tooltip="$t('msgbox.image_editor.reset')"
+                @click.stop="resetAdjustments"
+              />
+            </div>
           </div>
 
-          <div ref="presetStripRef" class="flex gap-2 overflow-x-auto overflow-y-hidden flex-nowrap">
+          <div class="relative flex items-center">
+            <button
+              class="shrink-0 w-5 flex items-center justify-center text-base-content/30 hover:text-base-content/70 transition-colors cursor-pointer disabled:opacity-20 disabled:cursor-default"
+              :disabled="selectedPreset === presetOptions[0]?.value"
+              @click="movePresetSelection(-1)"
+            ><IconLeft class="w-3.5 h-3.5" /></button>
+            <div ref="presetStripRef" class="flex gap-2 overflow-x-auto overflow-y-hidden flex-nowrap flex-1 mx-0.5">
             <div
               v-for="option in presetOptions"
               :key="option.value"
@@ -366,18 +385,18 @@
             >
               <div
                 :class="[
-                  'aspect-4/3 rounded-box border-2 transition-all duration-200 flex items-center justify-center overflow-hidden mb-1 relative',
+                  'aspect-[4/3] rounded-box border-2 transition-all duration-200 flex items-center justify-center overflow-hidden mb-1 relative',
                   selectedPreset === option.value ? 'border-primary ring-2 ring-primary/20' : 'border-base-content/5 hover:border-base-content/20',
                 ]"
               >
                 <div class="w-full h-full bg-base-300 flex items-center justify-center relative overflow-hidden rounded-[inherit] isolation-isolate">
                   <div
-                    v-if="props.fileInfo.thumbnail"
+                    v-if="fileInfo.thumbnail"
                     class="absolute left-0 top-0 overflow-hidden"
                     :style="presetViewportStyle"
                   >
                     <img
-                      :src="props.fileInfo.thumbnail"
+                      :src="fileInfo.thumbnail"
                       class="pointer-events-none block"
                       :style="getPresetThumbnailImageStyle(option.value)"
                     />
@@ -394,6 +413,12 @@
                 {{ option.label }}
               </div>
             </div>
+          </div>
+            <button
+              class="shrink-0 w-5 flex items-center justify-center text-base-content/30 hover:text-base-content/70 transition-colors cursor-pointer disabled:opacity-20 disabled:cursor-default"
+              :disabled="selectedPreset === presetOptions[presetOptions.length - 1]?.value"
+              @click="movePresetSelection(1)"
+            ><IconRight class="w-3.5 h-3.5" /></button>
           </div>
         </section>
 
@@ -469,14 +494,15 @@
       </div>
     </div>
 
-    <div class="mt-1 flex justify-end space-x-4">
+    <!-- Bottom Bar -->
+    <div v-if="fileInfo" class="h-12 shrink-0 flex items-center justify-end px-4 gap-2">
       <button
-        class="px-4 py-1 rounded-box hover:bg-base-100 hover:text-base-content cursor-pointer"
+        class="px-4 py-1 rounded-box hover:bg-base-100 hover:text-base-content cursor-pointer text-sm"
         @click="clickCancel"
       >{{ $t('msgbox.image_editor.cancel') }}</button>
       <button
         :class="[
-          'px-4 py-1 rounded-box',
+          'px-4 py-1 rounded-box text-sm',
           cropStatus === 1 || isProcessing
             ? 'text-base-content/30 cursor-default'
             : 'hover:bg-primary hover:text-base-100 cursor-pointer'
@@ -484,7 +510,7 @@
         @click="clickSave"
       >{{ !canOverwriteOriginal || config.imageEditor.saveAs === 1 ? $t('msgbox.image_editor.save_as_new') : $t('msgbox.image_editor.overwrite') }}</button>
     </div>
-  </ModalDialog>
+  </div>
 
   <MessageBox v-if="showOverwriteConfirm"
     :title="$t('msgbox.image_editor.overwrite')"
@@ -500,13 +526,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch, type CSSProperties } from 'vue';
+import { useRouter } from 'vue-router';
 import { useUIStore } from '@/stores/uiStore';
 import { useI18n } from 'vue-i18n';
 import { config } from '@/common/config';
-import { getFolderPath, getFileExtension, shortenFilename, getFullPath, combineFileName, getSelectOptions, getAssetSrc, getPreviewUrl, shouldUseBackendPreview } from '@/common/utils';
-import { editImage, checkFileExists } from '@/common/api';
+import { isMac, getFolderPath, getFileExtension, shortenFilename, getFullPath, combineFileName, getSelectOptions, getAssetSrc, getPreviewUrl, getThumbUrl, shouldUseBackendPreview } from '@/common/utils';
+import { editImage, checkFileExists, getFileInfo } from '@/common/api';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { emit as tauriEmit, listen } from '@tauri-apps/api/event';
 
-import ModalDialog from '@/components/ModalDialog.vue';
 import MessageBox from '@/components/MessageBox.vue';
 import TButton from '@/components/TButton.vue';
 import SliderInput from '@/components/SliderInput.vue';
@@ -525,30 +553,38 @@ import {
   IconRestore,
   IconLink,
   IconLinkOff,
+  IconLeft,
+  IconRight,
   IconPalette,
   IconSplitOn,
 } from '@/common/icons';
 
-const props = defineProps({
-  fileInfo: {
-    type: Object,
-    required: true,
-  },
-  initialImageSrc: {
-    type: String,
-    default: '',
-  },
-  initialTab: {
-    type: String,
-    default: 'edit',
-  },
-});
+const router = useRouter();
+const fileInfo = ref<any>(null);
+const initialImageSrc = ref('');
 
 const { locale, messages } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
 
 const uiStore = useUIStore();
-const emit = defineEmits(['success', 'failed', 'cancel']);
+
+function sendToParent(payload: Record<string, any>) {
+  tauriEmit('message-from-image-editor', payload);
+}
+
+async function loadFileInfo(fileId: number) {
+  try {
+    const file = await getFileInfo(fileId);
+    if (file) {
+      file.thumbnail = getThumbUrl(file.id);
+      fileInfo.value = file;
+      const src = getPreviewUrl(file);
+      initialImageSrc.value = typeof src === 'string' ? src : '';
+    }
+  } catch {
+    getCurrentWindow().close();
+  }
+}
 
 const isProcessing = ref(false);
 const activeEditorTab = ref<'edit' | 'adjust'>('edit');
@@ -564,20 +600,20 @@ const imageRectOriginal = ref<DOMRect | null>(null);
 const imageSrc = ref('');
 const imageWidth = ref(0);
 const imageHeight = ref(0);
-const isRawFile = computed(() => Number(props.fileInfo?.file_type || 0) === 3);
+const isRawFile = computed(() => Number(fileInfo.value?.file_type || 0) === 3);
 const normalizeRotate = (value: number) => {
   const normalized = Number(value || 0) % 360;
   return normalized < 0 ? normalized + 360 : normalized;
 };
-const initialDisplayRotate = computed(() => normalizeRotate(Number(props.fileInfo?.rotate || 0)));
+const initialDisplayRotate = computed(() => normalizeRotate(Number(fileInfo.value?.rotate || 0)));
 const isPortraitForRotation = (width: number, height: number, rotation: number) => {
   const normalized = normalizeRotate(rotation);
   return normalized % 180 !== 0 ? width > height : height > width;
 };
 const usesBackendPreview = computed(() =>
   shouldUseBackendPreview(
-    props.fileInfo?.name || props.fileInfo?.file_path || '',
-    Number(props.fileInfo?.file_type || 0)
+    fileInfo.value?.name || fileInfo.value?.file_path || '',
+    Number(fileInfo.value?.file_type || 0)
   )
 );
 
@@ -605,6 +641,10 @@ let isApplyingPreset = false;
 let histogramToneAnimationFrame: number | null = null;
 let skipNextCustomPresetLoad = false;
 let histogramLoadId = 0;
+
+let containerResizeObserver: ResizeObserver | null = null;
+let unlistenUpdateFile: (() => void) | null = null;
+const isResizing = ref(false);
 const PRESET_THUMBNAIL_WIDTH = 76;
 const PRESET_THUMBNAIL_HEIGHT = 57;
 
@@ -955,7 +995,7 @@ const cropShapeOptions = computed(() => {
   ];
 });
 
-const newFileName = ref(props.fileInfo.name.substring(0, props.fileInfo.name.lastIndexOf('.')) || props.fileInfo.name);
+const newFileName = ref((fileInfo.value?.name?.substring(0, fileInfo.value.name.lastIndexOf('.'))) || fileInfo.value?.name || '');
 
 const fileSaveAsOptions = computed(() => {
   const options = getSelectOptions(localeMsg.value.msgbox.image_editor.save_as_options);
@@ -965,7 +1005,7 @@ const fileFormatOptions = computed(() => getSelectOptions(localeMsg.value.msgbox
 const fileQualityOptions = computed(() => getSelectOptions(localeMsg.value.msgbox.image_editor.quality_options));
 
 const canOverwriteOriginal = computed(() => {
-  const ext = getFileExtension(props.fileInfo?.name || props.fileInfo?.file_path || '').toLowerCase();
+  const ext = getFileExtension(fileInfo.value?.name || fileInfo.value?.file_path || '').toLowerCase();
   return ['jpg', 'jpeg', 'png', 'webp'].includes(ext);
 });
 
@@ -978,8 +1018,8 @@ const handleOverwriteConfirm = () => {
     return;
   }
 
-  const originalPath = props.fileInfo.file_path;
-  const ext = getFileExtension(props.fileInfo.name).toLowerCase();
+  const originalPath = fileInfo.value.file_path;
+  const ext = getFileExtension(fileInfo.value.name).toLowerCase();
   const outputFormat = (ext === 'jpg' || ext === 'jpeg') ? 'jpg' : ext;
 
   executeSave({
@@ -1093,6 +1133,7 @@ watch(activeEditorTab, (tab) => {
   });
 });
 
+
 watch([brightness, contrast], () => {
   animateHistogramTone();
 });
@@ -1131,7 +1172,8 @@ watch([brightness, contrast, saturation, hue, blur, selectedFilter], () => {
 watch(
   [brightness, contrast, saturation, hue, blur, selectedFilter, () => resizeOutput.value.width, () => resizeOutput.value.height],
   () => {
-    uiStore.setActiveAdjustments(props.fileInfo.file_path, {
+    if (!fileInfo.value?.file_path) return;
+    uiStore.setActiveAdjustments(fileInfo.value.file_path, {
       brightness: brightness.value,
       contrast: contrast.value,
       saturation: saturation.value,
@@ -1147,16 +1189,66 @@ watch(
   { immediate: true }
 );
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('keydown', handleKeyDown);
   uiStore.pushInputHandler('EditImage');
-  activeEditorTab.value = props.initialTab === 'adjust'
-    ? 'adjust'
-    : (config.imageEditor.tab === 'adjust' ? 'adjust' : 'edit');
+  activeEditorTab.value = config.imageEditor.tab === 'adjust' ? 'adjust' : 'edit';
+
+  const query = router.currentRoute.value.query;
+  const fileId = Number(query.fileId || 0);
+  if (fileId > 0) {
+    await loadFileInfo(fileId);
+  }
+
+  if (!fileInfo.value) {
+    getCurrentWindow().close();
+    return;
+  }
 
   isProcessing.value = true;
   initEditImage();
   updateRealHistogram();
+
+  unlistenUpdateFile = await listen('update-file', async (event: any) => {
+    const newFileId = Number(event?.payload?.fileId || 0);
+    if (newFileId > 0 && newFileId !== Number(fileInfo.value?.id || 0)) {
+      await loadFileInfo(newFileId);
+      if (fileInfo.value) {
+        initEditImage();
+        updateRealHistogram();
+      }
+    }
+  });
+
+  containerResizeObserver = new ResizeObserver(() => {
+    isResizing.value = true;
+    enableTransition.value = false;
+    cropBoxFixed.value = false;
+    containerRect.value = containerRef.value?.getBoundingClientRect() || null;
+    if (containerRect.value) {
+      containerBounds.value = {
+        left: containerRect.value.left + containerPadding,
+        top: containerRect.value.top + containerPadding,
+        width: containerRect.value.width - containerPadding * 2,
+        height: containerRect.value.height - containerPadding * 2,
+      };
+      autoFitVisualArea();
+    }
+    if (cropStatus.value === 1 || cropApplied.value) {
+      requestAnimationFrame(() => {
+        imageRectOriginal.value = imageRef.value?.getBoundingClientRect() || null;
+        updateCropBoxFromCrop();
+        enableTransition.value = true;
+        isResizing.value = false;
+      });
+    } else {
+      enableTransition.value = true;
+      isResizing.value = false;
+    }
+  });
+  if (containerRef.value) {
+    containerResizeObserver.observe(containerRef.value);
+  }
 });
 
 onUnmounted(() => {
@@ -1165,6 +1257,14 @@ onUnmounted(() => {
   if (histogramToneAnimationFrame !== null) {
     cancelAnimationFrame(histogramToneAnimationFrame);
     histogramToneAnimationFrame = null;
+  }
+  if (containerResizeObserver) {
+    containerResizeObserver.disconnect();
+    containerResizeObserver = null;
+  }
+  if (unlistenUpdateFile) {
+    unlistenUpdateFile();
+    unlistenUpdateFile = null;
   }
 });
 
@@ -1181,8 +1281,10 @@ const onImageLoad = async () => {
   updateRealHistogram();
 
   requestAnimationFrame(() => {
-    enableTransition.value = true;
-    isProcessing.value = false;
+    requestAnimationFrame(() => {
+      enableTransition.value = true;
+      isProcessing.value = false;
+    });
   });
 };
 
@@ -1193,14 +1295,14 @@ const initEditImage = async () => {
   const loadingId = initEditImageLoadingId.value;
 
   if (usesBackendPreview.value) {
-    if (props.initialImageSrc) {
-      imageSrc.value = props.initialImageSrc;
+    if (initialImageSrc.value) {
+      imageSrc.value = initialImageSrc.value;
     }
 
     void (async () => {
       try {
         if (loadingId !== initEditImageLoadingId.value) return;
-        const previewSrc = getPreviewUrl(props.fileInfo.id, props.fileInfo.file_path);
+        const previewSrc = getPreviewUrl(fileInfo.value.id, fileInfo.value.file_path);
         if (previewSrc) {
           imageSrc.value = previewSrc;
         }
@@ -1209,11 +1311,11 @@ const initEditImage = async () => {
       }
     })();
   } else {
-    imageSrc.value = getAssetSrc(props.fileInfo.file_path);
+    imageSrc.value = getAssetSrc(fileInfo.value.file_path);
   }
 
-  imageWidth.value = props.fileInfo.width;
-  imageHeight.value = props.fileInfo.height;
+  imageWidth.value = fileInfo.value.width;
+  imageHeight.value = fileInfo.value.height;
   isPortrait.value = isPortraitForRotation(imageWidth.value, imageHeight.value, initialDisplayRotate.value);
   if (isRawFile.value) {
     config.imageEditor.saveAs = 1;
@@ -1231,7 +1333,7 @@ const initEditImage = async () => {
 
   enableTransition.value = false;
 
-  if (uiStore.activeAdjustments.filePath === props.fileInfo.file_path) {
+  if (uiStore.activeAdjustments.filePath === fileInfo.value.file_path) {
     const adj = uiStore.activeAdjustments;
     rotate.value = initialDisplayRotate.value;
     isFlippedX.value = false;
@@ -1270,7 +1372,7 @@ function clearHistogram() {
 }
 
 function resolveHistogramSource() {
-  return props.fileInfo?.thumbnail || imageSrc.value || '';
+  return fileInfo.value?.thumbnail || imageSrc.value || '';
 }
 
 function buildHistogramData(img: HTMLImageElement) {
@@ -1354,6 +1456,7 @@ const updateRealHistogram = async () => {
     }
   }
 };
+
 
 const generateHistogramPath = () => {
   if (!histogramData.value) return '';
@@ -1458,7 +1561,7 @@ const scrollSelectedPresetIntoView = () => {
   const container = presetStripRef.value;
   const selected = container?.querySelector(`[data-preset="${selectedPreset.value}"]`);
   if (!container || !selected) return;
-  selected.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  selected.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
 };
 
 const resetAdjustments = () => {
@@ -1913,10 +2016,10 @@ function handleKeyDown(event: KeyboardEvent) {
 }
 
 const clickCancel = () => {
-  if (uiStore.activeAdjustments.filePath === props.fileInfo.file_path) {
+  if (uiStore.activeAdjustments.filePath === fileInfo.value?.file_path) {
     uiStore.clearActiveAdjustments();
   }
-  emit('cancel');
+  getCurrentWindow().close();
 };
 
 function movePresetSelection(direction: number) {
@@ -1932,15 +2035,15 @@ const setEditParams = (overrides: { fileName?: string; destFilePath?: string; ou
 
   let destFilePath = overrides.destFilePath;
   if (!destFilePath) {
-    destFilePath = getFullPath(getFolderPath(props.fileInfo.file_path), combineFileName(name, outputFormat));
+    destFilePath = getFullPath(getFolderPath(fileInfo.value.file_path), combineFileName(name, outputFormat));
   }
 
   return {
-    sourceFilePath: props.fileInfo.file_path,
+    sourceFilePath: fileInfo.value.file_path,
     destFilePath,
     outputFormat,
     quality: [90, 80, 60][config.imageEditor.quality] || 80,
-    orientation: props.fileInfo.e_orientation || 1,
+    orientation: fileInfo.value.e_orientation || 1,
     flipHorizontal: isFlippedX.value,
     flipVertical: isFlippedY.value,
     rotate: rotate.value,
@@ -1966,20 +2069,21 @@ const setEditParams = (overrides: { fileName?: string; destFilePath?: string; ou
 const executeSave = async (overrides: { fileName?: string; destFilePath?: string; outputFormat?: string } = {}) => {
   isProcessing.value = true;
   let success = false;
-  const savedFilePath = overrides.destFilePath || props.fileInfo.file_path;
-  const saveAsNew = savedFilePath !== props.fileInfo.file_path;
+  const savedFilePath = overrides.destFilePath || fileInfo.value.file_path;
+  const saveAsNew = savedFilePath !== fileInfo.value.file_path;
   try {
     success = await editImage(setEditParams(overrides));
   } finally {
     isProcessing.value = false;
     if (success) {
-      uiStore.updateFileVersion(props.fileInfo.file_path);
-      if (uiStore.activeAdjustments.filePath === props.fileInfo.file_path) {
+      uiStore.updateFileVersion(fileInfo.value.file_path);
+      if (uiStore.activeAdjustments.filePath === fileInfo.value.file_path) {
         uiStore.clearActiveAdjustments();
       }
-      emit('success', { saveAsNew, filePath: savedFilePath });
+      sendToParent({ type: 'success', saveAsNew, filePath: savedFilePath });
+      getCurrentWindow().close();
     } else {
-      emit('failed');
+      sendToParent({ type: 'failed' });
     }
   }
 };
@@ -1990,7 +2094,7 @@ const clickSave = async () => {
   if (config.imageEditor.saveAs === 1) {
     isProcessing.value = true;
     try {
-      const folderPath = getFolderPath(props.fileInfo.file_path);
+      const folderPath = getFolderPath(fileInfo.value.file_path);
       const ext = fileFormatOptions.value[config.imageEditor.format].label.toLowerCase();
       const baseName = newFileName.value;
 
@@ -2010,7 +2114,7 @@ const clickSave = async () => {
       });
     } catch {
       isProcessing.value = false;
-      emit('failed');
+      sendToParent({ type: 'failed' });
     }
   } else {
     showOverwriteConfirm.value = true;
