@@ -390,6 +390,7 @@
             :selected-file-id="fileList[selectedItemIndex]?.id"
             :dedup-scan-key="dedupScanKey"
             :dedup-query-params="dedupQueryParams"
+            :refresh-key="dedupRefreshKey"
             @close="config.rightPanel.show = false"
             @select-file="handleDedupSelectFile"
             @preview-file="handleDedupPreviewFile"
@@ -1224,6 +1225,7 @@ const dedupScanKey = computed(() => {
   if (dedupSourceVersion.value <= 0) return '';
   return `query:${JSON.stringify(dedupQueryParams.value)}|version:${dedupSourceVersion.value}`;
 });
+const dedupRefreshKey = ref(0);
 
 const currentTitleIcon = computed(() => {
   switch (tempViewMode.value) {
@@ -4266,6 +4268,7 @@ const onTrashFile = async () => {
     updateSelectedImage(selectedItemIndex.value);
 
     if (shouldAdvanceDedup) {
+      dedupRefreshKey.value++;
       const postDeleteGroups = buildDuplicateGroups(fileList.value);
       if (postDeleteGroups.length > 0) {
         const previousIndex = preDeleteGroups.findIndex(group => group.key === currentDedupGroupKey);

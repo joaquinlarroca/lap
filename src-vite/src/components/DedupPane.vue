@@ -220,6 +220,10 @@ const props = defineProps({
     type: Object as () => Record<string, any> | null,
     default: null,
   },
+  refreshKey: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const emit = defineEmits<{
@@ -570,6 +574,14 @@ watch(
       totalDuplicateFileCount.value = 0;
       totalReclaimableBytes.value = 0;
     }
+  }
+);
+
+watch(
+  () => props.refreshKey,
+  (newKey, oldKey) => {
+    if (oldKey === undefined) return;
+    triggerBackendDedup();
   }
 );
 
