@@ -776,6 +776,24 @@ pub async fn edit_image(params: EditParams) -> bool {
             _ => image::ImageFormat::Jpeg,
         };
 
+        // Snapshot original metadata before overwriting the file.
+        // For overwrite (source == dest) we must copy the original to a
+        // temp location first — once we File::create the destination the
+        // original EXIF is gone. For save-as-new the source is untouched.
+        let metadata_backup_path = if format == image::ImageFormat::Jpeg || format == image::ImageFormat::WebP {
+            match prepare_metadata_backup_path(&params.source_file_path, &params.dest_file_path) {
+                Ok(path) => path,
+                Err(_) => return false,
+            }
+        } else {
+            None
+        };
+
+        let metadata_source = metadata_backup_path
+            .as_ref()
+            .map(|p| p.as_path())
+            .unwrap_or_else(|| Path::new(&params.source_file_path));
+
         let quality = params.quality.unwrap_or(80);
         let save_ok = if format == image::ImageFormat::Jpeg {
             if let Ok(file) = std::fs::File::create(path) {
@@ -789,23 +807,11 @@ pub async fn edit_image(params: EditParams) -> bool {
         };
 
         if !save_ok {
+            cleanup_metadata_backup(&metadata_backup_path);
             return false;
         }
 
         if format == image::ImageFormat::Jpeg || format == image::ImageFormat::WebP {
-            let metadata_backup_path = match prepare_metadata_backup_path(
-                &params.source_file_path,
-                &params.dest_file_path,
-            ) {
-                Ok(path) => path,
-                Err(_) => return false,
-            };
-
-            let metadata_source = metadata_backup_path
-                .as_ref()
-                .map(|p| p.as_path())
-                .unwrap_or_else(|| Path::new(&params.source_file_path));
-
             if let Err(_) = copy_metadata_to_output(metadata_source, path) {
                 if metadata_backup_path.is_some() {
                     let _ = fs::copy(metadata_source, path);
