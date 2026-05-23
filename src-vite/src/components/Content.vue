@@ -6,6 +6,8 @@
     @mouseenter="isContentHovered = true"
     @mouseleave="isContentHovered = false"
     @keydown="handleLocalKeyDown"
+    @dragstart.capture="markContentInternalDrag"
+    @dragend.capture="clearContentInternalDrag"
     @dragover.prevent
   >
 
@@ -589,8 +591,6 @@ import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { emit as tauriEmit, listen } from '@tauri-apps/api/event';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { getCurrentWebview } from '@tauri-apps/api/webview';
-import { platform } from '@tauri-apps/plugin-os';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/common/toast';
 import { useUIStore } from '@/stores/uiStore';
@@ -598,7 +598,7 @@ import { getAlbum, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQuery
          copyImage, renameFile, moveFile, copyFile, deleteFile, deleteFilePermanently, editFileComment, getFileThumb, getFileThumbs, getFileInfo,
          setFileRotate, getFileHasTags, setFileFavorite, setFileRating, getTagsForFile, searchSimilarImages, generateEmbedding, 
          revealPath, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover,
-         updateFileInfo, importFile, importFromDrag, importUrl, importFileBytes, addFileToDb, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
+         updateFileInfo, importUrl, importFileBytes, addFileToDb, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
          openFileWithApp, getAppConfig, getIndexRecoveryInfo, clearIndexRecoveryInfo, setLastSelectedItemIndex,
          dedupGetGroup, dedupDeleteSelected, getQueryFilePosition, getFolderSearchExcluded } from '@/common/api'; 
 import { config, libConfig } from '@/common/config';
@@ -1134,6 +1134,7 @@ function getMatchedRating(event: KeyboardEvent) {
 const isDragOver = ref(false);
 const dragOverCount = ref(0);
 const showDropWarning = ref(false);
+const isContentInternalDrag = ref(false);
 const acceptDrops = computed(() =>
   tempViewMode.value === 'none'
   && config.main.sidebarIndex === 0
@@ -1146,6 +1147,39 @@ let domDragEnter: ((e: DragEvent) => void) | null = null;
 let domDragLeave: ((e: DragEvent) => void) | null = null;
 let domDragOver: ((e: DragEvent) => void) | null = null;
 let domDrop: ((e: DragEvent) => void) | null = null;
+
+function getExternalDropUrl(dt: DataTransfer | null) {
+  const url = (dt?.getData('text/uri-list') || dt?.getData('text/plain') || '').trim();
+  return url.startsWith('http://') || url.startsWith('https://') ? url : '';
+}
+
+function hasExternalDomDrop(event: DragEvent) {
+  const dt = event.dataTransfer;
+  return !isContentInternalDrag.value && !!dt && (dt.files.length > 0 || !!getExternalDropUrl(dt));
+}
+
+function hasExternalDragIntent(event: DragEvent) {
+  if (isContentInternalDrag.value) return false;
+  const dt = event.dataTransfer;
+  if (!dt) return false;
+  const types = Array.from(dt.types || []);
+  return dt.files.length > 0
+    || types.includes('Files')
+    || types.includes('text/uri-list')
+    || types.includes('text/plain');
+}
+
+function isInternalReorderActive() {
+  return uiStore.isInputActive('ManageLibraries') || uiStore.isInputActive('AlbumList-edit');
+}
+
+function markContentInternalDrag() {
+  isContentInternalDrag.value = true;
+}
+
+function clearContentInternalDrag() {
+  isContentInternalDrag.value = false;
+}
 
 const isProcessing = ref(false);  // show processing status
 const isLoading = ref(false);     // show loading status in GridView (for empty file list)
@@ -1265,7 +1299,6 @@ const backupState = ref<any>(null);
 let unlistenKeydown: () => void;
 let unlistenImageViewer: () => void;
 let unlistenImageEditor: (() => void) | null = null;
-let unlistenDragDrop: () => void;
 let unlistenFaceIndexProgress: (() => void) | null = null;
 let unlistenLibraryTotalRefreshed: (() => void) | null = null;
 
@@ -2379,111 +2412,85 @@ onMounted( async() => {
     if (config.main.sidebarIndex === 0) updateContent(true);
   });
 
-  // Drag-drop file import — platform-aware
-  // macOS / Linux: Tauri native handles everything (unchanged).
-  // Windows (dragDropEnabled=false): DOM handles everything; Tauri native
-  // does not fire — the listener below is only active on macOS/Linux.
-  const osPlatform = await platform();
-
-  // Always set up Tauri handler for drag UI and file path drops
-  unlistenDragDrop = await getCurrentWebview().onDragDropEvent((event: any) => {
-    const { type, paths } = event.payload;
-    if (type === 'enter') {
-      if (acceptDrops.value) {
-        dragOverCount.value++;
-        isDragOver.value = true;
-      }
-    } else if (type === 'leave') {
-      dragOverCount.value = Math.max(0, dragOverCount.value - 1);
-      if (dragOverCount.value === 0) isDragOver.value = false;
-    } else if (type === 'drop') {
-      dragOverCount.value = 0;
-      isDragOver.value = false;
-      if (!acceptDrops.value) {
-        showDropWarning.value = true;
-        return;
-      }
-      if (paths && paths.length > 0) {
-        handleDropFiles(paths);
-      } else if (osPlatform !== 'windows') {
-        // macOS (NSPasteboardNameDrag) / Linux (clipboard fallback)
-        handleBrowserDropFromTauri();
-      }
+  // Drag-drop file import. Tauri native drag/drop is disabled so internal
+  // HTML5 drag interactions (e.g. sortable lists) keep their drop events.
+  domDragEnter = (e: DragEvent) => {
+    if (isInternalReorderActive()) return;
+    if (!hasExternalDragIntent(e)) return;
+    e.preventDefault();
+    if (acceptDrops.value) {
+      dragOverCount.value++;
+      isDragOver.value = true;
     }
-  });
-
-  // Windows (dragDropEnabled: false): Tauri native never fires. DOM handles
-  // drag UI, file bytes (via importFileBytes), and browser URLs.
-  // macOS / Linux: Tauri native handles everything — unchanged behaviour.
-  if (osPlatform === 'windows') {
-    domDragEnter = (e: DragEvent) => {
-      e.preventDefault();
-      if (acceptDrops.value) {
-        dragOverCount.value++;
-        isDragOver.value = true;
+  };
+  domDragLeave = (e: DragEvent) => {
+    if (isInternalReorderActive()) return;
+    if (!hasExternalDragIntent(e)) return;
+    e.preventDefault();
+    dragOverCount.value = Math.max(0, dragOverCount.value - 1);
+    if (dragOverCount.value === 0) isDragOver.value = false;
+  };
+  domDragOver = (e: DragEvent) => {
+    if (isInternalReorderActive()) return;
+    if (!hasExternalDragIntent(e)) return;
+    e.preventDefault();
+  };
+  domDrop = async (e: DragEvent) => {
+    if (isInternalReorderActive() || isContentInternalDrag.value) {
+      clearContentInternalDrag();
+      return;
+    }
+    if (!hasExternalDomDrop(e)) return;
+    e.preventDefault();
+    dragOverCount.value = 0;
+    isDragOver.value = false;
+    if (!acceptDrops.value) {
+      showDropWarning.value = true;
+      return;
+    }
+    const dt = e.dataTransfer;
+    if (!dt) return;
+    const folderId = libConfig.album.folderId;
+    const folderPath = libConfig.album.folderPath;
+    if (!folderId || !folderPath) return;
+    if (dt.files.length > 0) {
+      const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB
+      const extRE = /\.(\w+)$/i;
+      let imported = 0;
+      let skipped = 0;
+      for (const file of dt.files) {
+        if (!extRE.test(file.name)) { skipped++; continue; }
+        if (file.size > MAX_FILE_SIZE) { skipped++; continue; }
+        try {
+          const buf = await file.arrayBuffer();
+          const bytes = Array.from(new Uint8Array(buf));
+          const result = await importFileBytes(bytes, file.name, folderId, folderPath);
+          if (result) imported++;
+          else skipped++;
+        } catch (err) {
+          console.error('Failed to import file via bytes:', file.name, err);
+          skipped++;
+        }
       }
-    };
-    domDragLeave = (e: DragEvent) => {
-      e.preventDefault();
-      dragOverCount.value = Math.max(0, dragOverCount.value - 1);
-      if (dragOverCount.value === 0) isDragOver.value = false;
-    };
-    domDragOver = (e: DragEvent) => {
-      e.preventDefault();
-    };
-    domDrop = async (e: DragEvent) => {
-      e.preventDefault();
-      dragOverCount.value = 0;
-      isDragOver.value = false;
-      if (!acceptDrops.value) {
-        showDropWarning.value = true;
+      if (imported > 0) {
+        await updateContent();
+        toast.success(t('msgbox.drop_import.success', { count: imported }));
         return;
       }
-      const dt = e.dataTransfer;
-      if (!dt) return;
-      const folderId = libConfig.album.folderId;
-      const folderPath = libConfig.album.folderPath;
-      if (!folderId || !folderPath) return;
-      if (dt.files.length > 0) {
-        const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB
-        const extRE = /\.(\w+)$/i;
-        let imported = 0;
-        let skipped = 0;
-        for (const file of dt.files) {
-          if (!extRE.test(file.name)) { skipped++; continue; }
-          if (file.size > MAX_FILE_SIZE) { skipped++; continue; }
-          try {
-            const buf = await file.arrayBuffer();
-            const bytes = Array.from(new Uint8Array(buf));
-            const result = await importFileBytes(bytes, file.name, folderId, folderPath);
-            if (result) imported++;
-            else skipped++;
-          } catch (err) {
-            console.error('Failed to import file via bytes:', file.name, err);
-            skipped++;
-          }
-        }
-        if (imported > 0) {
-          await updateContent();
-          toast.success(t('msgbox.drop_import.success', { count: imported }));
-          return;
-        }
-        // Fall through to URL handling — some browsers provide both
-        // file-like items and text/uri-list.
-      }
-      const uriList = dt.getData('text/uri-list');
-      const url = (uriList || dt.getData('text/plain') || '').trim();
-      if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-        handleDropUrls([url]);
-        return;
-      }
-      toast.warning(t('msgbox.drop_import.no_files'));
-    };
-    document.addEventListener('dragenter', domDragEnter);
-    document.addEventListener('dragleave', domDragLeave);
-    document.addEventListener('dragover', domDragOver);
-    document.addEventListener('drop', domDrop);
-  }
+      // Fall through to URL handling — some browsers provide both
+      // file-like items and text/uri-list.
+    }
+    const url = getExternalDropUrl(dt);
+    if (url) {
+      handleDropUrls([url]);
+      return;
+    }
+    toast.warning(t('msgbox.drop_import.no_files'));
+  };
+  document.addEventListener('dragenter', domDragEnter);
+  document.addEventListener('dragleave', domDragLeave);
+  document.addEventListener('dragover', domDragOver);
+  document.addEventListener('drop', domDrop);
 
   unlistenImageViewer = await listen('message-from-image-viewer', async (event) => {
     const { message } = event.payload as any;
@@ -2720,7 +2727,6 @@ onBeforeUnmount(() => {
   if (unlistenRefreshContent) unlistenRefreshContent();
   if (unlistenFilesDeleted) unlistenFilesDeleted();
   if (unlistenFaceIndexProgress) unlistenFaceIndexProgress();
-  if (unlistenDragDrop) unlistenDragDrop();
   if (domDragEnter) document.removeEventListener('dragenter', domDragEnter);
   if (domDragLeave) document.removeEventListener('dragleave', domDragLeave);
   if (domDragOver) document.removeEventListener('dragover', domDragOver);
@@ -4058,43 +4064,6 @@ const onExportTo = async () => {
     toast.success(t('msgbox.export_to.success', { source: sourceLabel, dest: destLabel }));
   } else {
     toast.error(t('msgbox.export_to.error', { source: sourceLabel, dest: destLabel }));
-  }
-}
-
-async function handleDropFiles(paths: string[]) {
-  const folderId = libConfig.album.folderId;
-  const folderPath = libConfig.album.folderPath;
-  if (!folderId || !folderPath) return;
-
-  let imported = 0;
-  for (const sourcePath of paths) {
-    try {
-      const file = await importFile(sourcePath, folderId, folderPath);
-      if (file) imported++;
-    } catch (e) {
-      console.error('Failed to import file:', sourcePath, e);
-    }
-  }
-
-  if (imported > 0) {
-    await updateContent();
-    toast.success(t('msgbox.drop_import.success', { count: imported }));
-  } else {
-    toast.warning(t('msgbox.drop_import.no_files'));
-  }
-}
-
-async function handleBrowserDropFromTauri() {
-  const folderId = libConfig.album.folderId;
-  const folderPath = libConfig.album.folderPath;
-  if (!folderId || !folderPath) return;
-
-  const file = await importFromDrag(folderId, folderPath);
-  if (file) {
-    await updateContent();
-    toast.success(t('msgbox.drop_import.success', { count: 1 }));
-  } else {
-    toast.warning(t('msgbox.drop_import.no_files'));
   }
 }
 

@@ -220,7 +220,7 @@ const props = defineProps({
   isNewLibrary: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['ok', 'cancel']);
+const emit = defineEmits(['ok', 'cancel', 'updated']);
 const uiStore = useUIStore();
 const { t, locale, messages } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
@@ -549,6 +549,7 @@ const onDragEnd = async () => {
   const ids = libraries.value.map(l => l.id);
   try {
     await reorderLibraries(ids);
+    emit('updated', { type: 'reorder', ids });
   } catch (error) {
     console.error(error);
   }
