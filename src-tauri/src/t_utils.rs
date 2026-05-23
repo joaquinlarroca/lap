@@ -391,17 +391,85 @@ fn file_id(path: &Path) -> Option<u64> {
 
 #[cfg(windows)]
 fn file_id(path: &Path) -> Option<u64> {
-    use std::fs::OpenOptions;
-    use std::os::windows::fs::{MetadataExt, OpenOptionsExt};
+    use std::ffi::OsStr;
+    use std::os::windows::ffi::OsStrExt;
+    use win32_imports::*;
 
-    OpenOptions::new()
-        .read(true)
-        .custom_flags(0x0200_0000) // FILE_FLAG_BACKUP_SEMANTICS for directories
-        .open(path)
-        .ok()?
-        .metadata()
-        .ok()
-        .and_then(|m| m.file_index())
+    let path_wide: Vec<u16> = OsStr::new(path)
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+
+    unsafe {
+        let handle = CreateFileW(
+            path_wide.as_ptr(),
+            0,          // dwDesiredAccess — 0 is sufficient for metadata
+            0x7,        // FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE
+            core::ptr::null_mut(),
+            3,          // OPEN_EXISTING
+            0x0200_0000, // FILE_FLAG_BACKUP_SEMANTICS (required for directories)
+            core::ptr::null_mut(),
+        );
+        if handle == INVALID_HANDLE_VALUE {
+            return None;
+        }
+        let mut info = core::mem::zeroed::<BY_HANDLE_FILE_INFORMATION>();
+        let ok = GetFileInformationByHandle(handle, &mut info);
+        CloseHandle(handle);
+        if ok == 0 {
+            return None;
+        }
+        Some(((info.nFileIndexHigh as u64) << 32) | (info.nFileIndexLow as u64))
+    }
+}
+
+#[cfg(windows)]
+mod win32_imports {
+    #![allow(non_camel_case_types, non_snake_case, unused)]
+
+    pub type HANDLE = isize;
+
+    #[repr(C)]
+    pub struct FILETIME {
+        pub dwLowDateTime: u32,
+        pub dwHighDateTime: u32,
+    }
+
+    #[repr(C)]
+    pub struct BY_HANDLE_FILE_INFORMATION {
+        pub dwFileAttributes: u32,
+        pub ftCreationTime: FILETIME,
+        pub ftLastAccessTime: FILETIME,
+        pub ftLastWriteTime: FILETIME,
+        pub dwVolumeSerialNumber: u32,
+        pub nFileSizeHigh: u32,
+        pub nFileSizeLow: u32,
+        pub nNumberOfLinks: u32,
+        pub nFileIndexHigh: u32,
+        pub nFileIndexLow: u32,
+    }
+
+    pub const INVALID_HANDLE_VALUE: HANDLE = -1isize;
+
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        pub fn CreateFileW(
+            lpFileName: *const u16,
+            dwDesiredAccess: u32,
+            dwShareMode: u32,
+            lpSecurityAttributes: *mut core::ffi::c_void,
+            dwCreationDisposition: u32,
+            dwFlagsAndAttributes: u32,
+            hTemplateFile: *mut core::ffi::c_void,
+        ) -> HANDLE;
+
+        pub fn GetFileInformationByHandle(
+            hFile: HANDLE,
+            lpFileInformation: *mut BY_HANDLE_FILE_INFORMATION,
+        ) -> i32;
+
+        pub fn CloseHandle(hObject: HANDLE) -> i32;
+    }
 }
 
 pub fn authorize_directory_scope(
