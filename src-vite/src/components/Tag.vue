@@ -28,6 +28,33 @@
       </div>
     </div>
 
+    <div v-if="activeTab === 'custom'" class="mx-1 mb-2 px-1 shrink-0">
+      <div
+        :class="[
+          'h-8 flex items-center rounded-box transition-colors bg-base-100/40',
+          isTagSearchFocused ? 'border border-primary' : 'border border-base-content/10 hover:border-base-content/30',
+        ]"
+      >
+        <IconSearch class="ml-2 w-4 h-4 shrink-0 text-base-content/40" />
+        <input
+          type="text"
+          v-model="tagSearch"
+          :placeholder="$t('tag.search_tags')"
+          class="w-full min-w-0 bg-transparent border-none focus:ring-0 px-2 text-sm placeholder-base-content/30 focus:outline-none"
+          @focus="isTagSearchFocused = true"
+          @blur="isTagSearchFocused = false"
+        />
+        <button
+          v-if="tagSearch"
+          type="button"
+          class="mr-1 p-1 rounded-box text-base-content/30 hover:text-base-content/70"
+          @click="tagSearch = ''"
+        >
+          <IconClose class="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+
     <div class="grow overflow-x-hidden overflow-y-auto">
       <ul v-if="activeTab === 'smart'">
         <li v-for="item in smartTagItems" :key="item.id" :id="'smart-tag-' + item.id">
@@ -44,8 +71,8 @@
         </li>
       </ul>
 
-      <ul v-else-if="allTags.length > 0">
-        <li v-for="tag in sortedTags" :key="tag.id" :id="'tag-' + tag.id">
+      <ul v-else-if="filteredTags.length > 0">
+        <li v-for="tag in filteredTags" :key="tag.id" :id="'tag-' + tag.id">
           <div
             :class="[
               'sidebar-item group',
@@ -82,6 +109,10 @@
           </div>
         </li>
       </ul>
+
+      <div v-else-if="allTags.length > 0" class="sidebar-empty text-sm">
+        <span class="text-center">{{ $t('tag.not_found') }}</span>
+      </div>
 
       <div v-else class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
         <!-- <IconTag class="w-8 h-8 mb-2" /> -->
@@ -124,7 +155,9 @@ import { config, libConfig } from '@/common/config';
 import { getAllTags, renameTag, deleteTag, createTag } from '@/common/api';
 import { 
   IconAdd,
+  IconClose,
   IconMore,
+  IconSearch,
   IconSmartTag,
   IconTag,
   IconRename, 
@@ -162,8 +195,15 @@ const activeTab = computed<'smart' | 'custom'>({
 const isRenamingTag = ref(false);
 const originalTagName = ref('');
 const tagInputRef = ref<HTMLInputElement[]>([]);
+const tagSearch = ref('');
+const isTagSearchFocused = ref(false);
 
 const sortedTags = computed(() => allTags.value);
+const filteredTags = computed(() => {
+  const query = tagSearch.value.trim().toLowerCase();
+  if (!query) return sortedTags.value;
+  return sortedTags.value.filter(tag => tag.name.toLowerCase().includes(query));
+});
 
 const smartTagItems = computed(() => {
   return SMART_TAG_CATEGORIES.map(category => {
