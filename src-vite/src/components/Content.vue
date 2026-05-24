@@ -140,6 +140,7 @@
             :icon="IconSelection"
             :tooltip="$t('toolbar.filter.select_mode')"
             :selected="selectMode"
+            :disabled="isScanStreamingMode"
             @click="handleSelectMode(!selectMode)"
           />
 
@@ -148,6 +149,7 @@
             :icon="IconSimilar"
             :tooltip="$t('toolbar.tooltip.open_dedup')"
             :selected="isDedupPanelOpen"
+            :disabled="isScanStreamingMode"
             @click="toggleDedupPanel"
           />
 
@@ -2038,6 +2040,14 @@ const isScanStreamingMode = computed(() =>
   Boolean(libConfig.album.selected)
 );
 
+// When scanning starts, close panels and multi-select which rely on a stable file list.
+watch(isScanStreamingMode, (streaming) => {
+  if (streaming) {
+    config.rightPanel.show = false;
+    if (selectMode.value) selectMode.value = false;
+  }
+});
+
 const thumbProgressPercent = computed(() => {
   if (fileList.value.length <= 0) return 0;
   return Number(((thumbCount.value / fileList.value.length) * 100).toFixed(0));
@@ -2609,6 +2619,7 @@ onMounted( async() => {
       // Avoid duplicated refresh: this explicit refresh replaces the
       // watch(isIndexing) idle refresh for this finish cycle.
       suppressNextIndexingIdleRefresh.value = true;
+      selectedItemIndex.value = 0;
       setTimeout(() => {
         updateContent(true);
       }, 200);
@@ -4699,6 +4710,7 @@ const invertSelectionInCurrentList = async () => {
 };
 
 const handleSelectMode = (value: any, options: { notify?: boolean } = {}) => {
+  if (isScanStreamingMode.value) return;
   const wasSelectMode = selectMode.value;
   selectMode.value = value;
   if(!selectMode.value) {
@@ -4795,6 +4807,7 @@ const toggleInfoPanel = () => {
 };
 
 const toggleDedupPanel = () => {
+  if (isScanStreamingMode.value) return;
   checkUnsavedChanges(() => {
     if (isDedupPanelOpen.value) {
       config.rightPanel.show = false;
