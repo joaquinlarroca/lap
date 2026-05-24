@@ -2412,6 +2412,7 @@ onMounted( async() => {
 
   unlistenLibraryTotalRefreshed = await listen('library-total-refreshed', (event: any) => {
     if (event?.payload?.source === 'content') return;
+    if (isScanStreamingMode.value) return;
     if (config.main.sidebarIndex === 0) updateContent(true);
   });
 

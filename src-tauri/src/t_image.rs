@@ -1071,7 +1071,7 @@ pub fn copy_image_to_clipboard(img: DynamicImage) -> bool {
     false
 }
 
-fn is_heic_path(file_path: &str) -> bool {
+pub(crate) fn is_heic_path(file_path: &str) -> bool {
     matches!(
         t_utils::get_file_extension(file_path)
             .unwrap_or_default()

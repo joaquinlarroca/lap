@@ -227,6 +227,7 @@ int lap_libraw_extract_thumbnail(libraw_data_t *raw, int index,
 }
 
 int lap_libraw_render_preview(libraw_data_t *raw, int half_size,
+                              int strict_data_error,
                               LapLibRawImage *out) {
   if (!raw || !out) {
     return LIBRAW_UNSPECIFIED_ERROR;
@@ -239,11 +240,13 @@ int lap_libraw_render_preview(libraw_data_t *raw, int half_size,
   }
 
   LapLibRawDataErrorState data_error = {false};
-  libraw_set_dataerror_handler(raw, lap_libraw_data_error_callback,
-                               &data_error);
+  if (strict_data_error) {
+    libraw_set_dataerror_handler(raw, lap_libraw_data_error_callback,
+                                 &data_error);
+  }
 
   int ret = libraw_unpack(raw);
-  if (data_error.occurred) {
+  if (strict_data_error && data_error.occurred) {
     return LIBRAW_IO_ERROR;
   }
   if (ret != LIBRAW_SUCCESS) {
@@ -253,7 +256,7 @@ int lap_libraw_render_preview(libraw_data_t *raw, int half_size,
   libraw_set_output_bps(raw, 8);
 
   ret = libraw_dcraw_process(raw);
-  if (data_error.occurred) {
+  if (strict_data_error && data_error.occurred) {
     return LIBRAW_IO_ERROR;
   }
   if (ret != LIBRAW_SUCCESS) {
@@ -262,7 +265,7 @@ int lap_libraw_render_preview(libraw_data_t *raw, int half_size,
 
   int err = LIBRAW_SUCCESS;
   libraw_processed_image_t *image = libraw_dcraw_make_mem_image(raw, &err);
-  if (data_error.occurred) {
+  if (strict_data_error && data_error.occurred) {
     if (image) {
       libraw_dcraw_clear_mem(image);
     }

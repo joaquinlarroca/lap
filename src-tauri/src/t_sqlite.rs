@@ -1037,6 +1037,8 @@ impl AFile {
                 (None, None, None, None)
             };
 
+        let should_swap_dimensions_for_orientation = !t_image::is_heic_path(file_path);
+
         let file = Self {
             id: None,
             folder_id,
@@ -1054,10 +1056,22 @@ impl AFile {
 
             taken_date,
             width: e_orientation
-                .map(|orientation| if orientation > 4 { height } else { width })
+                .map(|orientation| {
+                    if should_swap_dimensions_for_orientation && orientation > 4 {
+                        height
+                    } else {
+                        width
+                    }
+                })
                 .or(Some(width)),
             height: e_orientation
-                .map(|orientation| if orientation > 4 { width } else { height })
+                .map(|orientation| {
+                    if should_swap_dimensions_for_orientation && orientation > 4 {
+                        width
+                    } else {
+                        height
+                    }
+                })
                 .or(Some(height)),
             duration: Some(duration as i64),
 

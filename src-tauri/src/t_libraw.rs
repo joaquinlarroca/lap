@@ -65,6 +65,7 @@ unsafe extern "C" {
     fn lap_libraw_render_preview(
         raw: *mut c_void,
         half_size: c_int,
+        strict_data_error: c_int,
         out: *mut LapLibRawImage,
     ) -> c_int;
     fn lap_libraw_free_buffer(data: *mut u8);
@@ -388,7 +389,7 @@ impl RawHandle {
             flip: 0,
         };
 
-        let ret = unsafe { lap_libraw_render_preview(self.raw, 0, &mut out) };
+        let ret = unsafe { lap_libraw_render_preview(self.raw, 0, 0, &mut out) };
         if ret != 0 {
             return Err(libraw_error(ret, "Failed to process RAW preview"));
         }
@@ -493,7 +494,8 @@ fn format_lens_model_from_numbers(
     Some(format!("{} {}", focal, aperture))
 }
 
-fn render_processed_preview(raw: &mut RawHandle, max_edge: u32) -> Result<Vec<u8>, String> {
+fn render_processed_preview(file_path: &str, max_edge: u32) -> Result<Vec<u8>, String> {
+    let mut raw = RawHandle::open(file_path)?;
     let rendered = raw.render_preview()?;
     let image = decode_processed_image(&rendered)?;
     let image = if max_edge > 0 {
@@ -548,29 +550,9 @@ pub fn get_raw_preview_image(file_path: &str) -> Result<Option<Vec<u8>>, String>
     }
 
     // Processed preview: LibRaw dcraw_process auto-rotates, correct WB
-    match render_processed_preview(&mut raw, 4096) {
+    match render_processed_preview(file_path, 4096) {
         Ok(bytes) => Ok(Some(bytes)),
-        Err(e) => {
-            eprintln!(
-                "LibRaw render_processed_preview failed for {}: {}, trying largest embedded thumbnail",
-                file_path, e
-            );
-
-            let best = thumbs
-                .iter()
-                .filter(|thumb| thumb.format == LIBRAW_THUMBNAIL_JPEG && !thumb.data.is_empty())
-                .max_by_key(|thumb| thumb.width.max(thumb.height));
-
-            if let Some(thumb) = best {
-                let orient = jpeg_exif_orientation(&thumb.data);
-                if let Ok(image) = image::load_from_memory(&thumb.data) {
-                    let image = orient_image(image, orient);
-                    return encode_as_jpeg(&image).map(Some);
-                }
-            }
-
-            Ok(None)
-        }
+        Err(_) => Ok(None),
     }
 }
 
@@ -592,7 +574,7 @@ pub fn get_raw_thumbnail(file_path: &str, thumbnail_size: u32) -> Result<Option<
         flip: 0,
     };
 
-    let ret = unsafe { lap_libraw_render_preview(raw.raw, 1, &mut out) };
+    let ret = unsafe { lap_libraw_render_preview(raw.raw, 1, 1, &mut out) };
     if ret == 0 && !out.data.is_null() && out.len > 0 {
         // Copy C buffer into Rust Vec, then free the C allocation immediately.
         let data = unsafe { std::slice::from_raw_parts(out.data, out.len as usize).to_vec() };
