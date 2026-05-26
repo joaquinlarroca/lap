@@ -141,7 +141,7 @@
               @click="$emit('trash')"
             >
               <IconTrash class="w-3.5 h-3.5" />
-              {{ isMac ? $t('menu.file.move_to_trash') : $t('menu.file.delete') }}
+              {{ $t('menu.file.move_to_trash') }}
             </button>
           </div>
         </div>

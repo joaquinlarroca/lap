@@ -205,7 +205,7 @@ export const useFileMenuItems = (
         action: createAction('refresh-file-info')
       },
       {
-        label: isMac ? localeMsg.value.menu.file.move_to_trash : localeMsg.value.menu.file.delete,
+        label: localeMsg.value.menu.file.move_to_trash,
         icon: markRaw(IconTrash),
         shortcut: shortcut('file.trash'),
         action: createAction('trash')

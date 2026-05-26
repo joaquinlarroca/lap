@@ -97,7 +97,7 @@
               @click="trashSelectedDuplicates(activeGroup.id, selectedDeleteBytes)"
             >
               <IconTrash class="w-3.5 h-3.5" />
-              {{ isMac ? $t('menu.file.move_to_trash') : $t('menu.file.delete') }}{{ selectedDeleteCount > 0 ? `(${formatFileSize(selectedDeleteBytes)})` : '' }}
+              {{ $t('menu.file.move_to_trash') }}{{ selectedDeleteCount > 0 ? `(${formatFileSize(selectedDeleteBytes)})` : '' }}
             </button>
           </div>
           <div class="space-y-2.5">
