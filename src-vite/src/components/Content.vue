@@ -2549,10 +2549,23 @@ onMounted( async() => {
   unlistenImageEditor = await listen('message-from-image-editor', async (event: any) => {
     const { type, saveAsNew, filePath } = event.payload as any;
     if (type === 'success') {
-      if (!saveAsNew && filePath) {
-        uiStore.updateFileVersion(filePath);
+      try {
+        const editorWindow = await WebviewWindow.getByLabel('imageeditor');
+        if (editorWindow) {
+          try {
+            await editorWindow.destroy();
+          } catch (error) {
+            console.error('Failed to destroy ImageEditor window from parent:', error);
+          }
+        }
+
+        if (!saveAsNew && filePath) {
+          uiStore.updateFileVersion(filePath);
+        }
+        await onFileSaved(true, { saveAsNew, filePath });
+      } catch (error) {
+        console.error('Failed handling ImageEditor save success:', error);
       }
-      await onFileSaved(true, { saveAsNew, filePath });
     } else if (type === 'failed') {
       await onFileSaved(false);
     }
@@ -5291,9 +5304,6 @@ async function openImageEditor(index: number) {
     newWindow?.show();
   });
 
-  newWindow.once('tauri://close-requested', () => {
-    newWindow?.close();
-  });
 }
 
 async function openPrintWindow(index: number) {

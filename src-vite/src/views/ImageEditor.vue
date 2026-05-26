@@ -443,7 +443,7 @@
     </div>
 
     <!-- Bottom Bar -->
-    <div v-if="fileInfo" class="h-12 shrink-0 flex items-center justify-end px-4 gap-2 border-t border-base-content/5">
+    <div v-if="fileInfo" class="h-14 shrink-0 flex items-center justify-end px-4 gap-2">
       <button
         class="px-4 py-1 rounded-box hover:bg-base-100 hover:text-base-content cursor-pointer text-sm mr-4"
         @click="clickCancel"
@@ -455,36 +455,36 @@
         </select>
       </template>
 
-      <div class="join">
-        <button
-          class="btn btn-sm btn-primary join-item"
-          :disabled="cropStatus === 1 || isProcessing"
-          @click="clickSave"
-        >{{ effectiveSaveAsNew ? $t('msgbox.image_editor.save_as_new') : $t('msgbox.image_editor.overwrite') }}</button>
-        <div class="dropdown dropdown-top dropdown-end">
+        <div class="join">
           <button
-            tabindex="0"
-            class="btn btn-sm btn-primary join-item border-l border-primary-content/20 px-1.5"
+            class="btn btn-sm btn-primary join-item px-4"
+            :disabled="cropStatus === 1 || isProcessing"
+            @click="clickSave"
+          >{{ effectiveSaveAsNew ? $t('msgbox.image_editor.save_as_new') : $t('msgbox.image_editor.overwrite') }}</button>
+          <div class="dropdown dropdown-top dropdown-end">
+            <button
+              tabindex="0"
+              class="btn btn-sm btn-primary join-item border-l border-primary-content/20 px-1.5"
             :disabled="!canOverwriteOriginal || cropStatus === 1"
-          >
-            <IconArrowDown class="w-3 h-3" />
-          </button>
-          <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box shadow-lg mb-1 p-1 text-sm w-32">
-            <li>
-              <a :class="config.imageEditor.saveAs === 0 ? 'active' : ''"
-                 @click="config.imageEditor.saveAs = 0; closeSaveDropdown()">
-                {{ $t('msgbox.image_editor.overwrite') }}
-              </a>
-            </li>
-            <li>
-              <a :class="config.imageEditor.saveAs === 1 ? 'active' : ''"
-                 @click="config.imageEditor.saveAs = 1; closeSaveDropdown()">
-                {{ $t('msgbox.image_editor.save_as_new') }}
-              </a>
-            </li>
-          </ul>
+            >
+              <IconArrowDown class="w-3 h-3" />
+            </button>
+            <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box shadow-lg mb-1 p-1 text-sm w-32">
+              <li>
+                <a :class="config.imageEditor.saveAs === 0 ? 'active' : ''"
+                   @click="config.imageEditor.saveAs = 0; closeSaveDropdown()">
+                  {{ $t('msgbox.image_editor.overwrite') }}
+                </a>
+              </li>
+              <li>
+                <a :class="config.imageEditor.saveAs === 1 ? 'active' : ''"
+                   @click="config.imageEditor.saveAs = 1; closeSaveDropdown()">
+                  {{ $t('msgbox.image_editor.save_as_new') }}
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
-      </div>
     </div>
   </div>
 
@@ -548,7 +548,9 @@ const appWindow = getCurrentWebviewWindow();
 const showDesktopTitleBar = isWin || isLinux;
 
 function sendToParent(payload: Record<string, any>) {
-  tauriEmit('message-from-image-editor', payload);
+  void tauriEmit('message-from-image-editor', payload).catch((error) => {
+    console.error('Failed to notify parent from image editor:', error);
+  });
 }
 
 async function closeEditorWindow() {
@@ -1364,8 +1366,6 @@ const initEditImage = async () => {
   isPortrait.value = isPortraitForRotation(imageWidth.value, imageHeight.value, initialDisplayRotate.value);
   if (isRawFile.value || !canOverwriteOriginal.value) {
     config.imageEditor.saveAs = 1;
-  } else if (config.imageEditor.saveAs !== 0) {
-    config.imageEditor.saveAs = 0;
   }
 
   containerRect.value = containerRef.value?.getBoundingClientRect() || null;
@@ -1972,7 +1972,6 @@ const executeSave = async (overrides: { fileName?: string; destFilePath?: string
         uiStore.clearActiveAdjustments();
       }
       sendToParent({ type: 'success', saveAsNew, filePath: savedFilePath });
-      await closeEditorWindow();
     } else {
       sendToParent({ type: 'failed' });
     }
