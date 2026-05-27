@@ -3525,6 +3525,7 @@ async function updateContent(force = false) {
   else if(newIndex === 3) {   // calendar
     if(libConfig.calendar.year === null) {
       contentTitle.value = "";
+      showEmptyContent(requestId);
     } else if (libConfig.calendar.year === -1) {  // on this day
       contentTitle.value = localeMsg.value.calendar.on_this_day;
       getFileList({ startDate: -1, endDate: -1 }, requestId);
@@ -3546,10 +3547,12 @@ async function updateContent(force = false) {
       const smartId = libConfig.tag.smartId;
       if (!smartId) {
         contentTitle.value = "";
+        showEmptyContent(requestId);
       } else {
         const smartTag = getSmartTagById(smartId);
         if (!smartTag) {
           contentTitle.value = "";
+          showEmptyContent(requestId);
           return;
         }
         const smartTagLabel = localeMsg.value.tag.smart_items?.[smartTag.id] || smartTag.id;
@@ -3559,6 +3562,7 @@ async function updateContent(force = false) {
     } else {
       if (libConfig.tag.id === null) {
         contentTitle.value = "";
+        showEmptyContent(requestId);
       } else {
         getTagName(libConfig.tag.id).then(tagName => {
           if (requestId !== currentContentRequestId) return;
@@ -3567,6 +3571,7 @@ async function updateContent(force = false) {
             getFileList({ tagId: libConfig.tag.id || 0 }, requestId);
           } else {
             contentTitle.value = "";
+            showEmptyContent(requestId);
           }
         });
       }
@@ -3575,6 +3580,7 @@ async function updateContent(force = false) {
   else if(newIndex === 5) {   // person
     if (libConfig.person.id === null) {
       contentTitle.value = "";
+      showEmptyContent(requestId);
     } else {
       contentTitle.value = libConfig.person.name || `${localeMsg.value.sidebar.people}`;
       getFileList({ personId: libConfig.person.id }, requestId);
@@ -3583,6 +3589,7 @@ async function updateContent(force = false) {
   else if(newIndex === 6) {   // location
     if(libConfig.location.admin1 === null) {
       contentTitle.value = "";
+      showEmptyContent(requestId);
     } else {
       if(libConfig.location.name) {
         contentTitle.value = `${libConfig.location.admin1} > ${libConfig.location.name}`;
@@ -3599,6 +3606,7 @@ async function updateContent(force = false) {
       const lensModel = (libConfig.camera as any).lensModel;
       if (lensMake === null) {
         contentTitle.value = "";
+        showEmptyContent(requestId);
       } else if (lensModel) {
         contentTitle.value = `${lensMake} > ${lensModel}`;
         getFileList({ lensMake, lensModel }, requestId);
@@ -3608,6 +3616,7 @@ async function updateContent(force = false) {
       }
     } else if(libConfig.camera.make === null) {
       contentTitle.value = "";
+      showEmptyContent(requestId);
     } else {
       if(libConfig.camera.model) {
         contentTitle.value = `${libConfig.camera.make} > ${libConfig.camera.model}`;
