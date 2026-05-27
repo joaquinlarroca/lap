@@ -600,7 +600,7 @@ import { getAlbum, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQuery
          copyImage, renameFile, moveFile, copyFile, deleteFile, deleteFilePermanently, editFileComment, getFileThumb, getFileThumbs, getFileInfo,
          setFileRotate, getFileHasTags, setFileFavorite, setFileRating, getTagsForFile, searchSimilarImages, generateEmbedding, 
          revealPath, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover,
-         updateFileInfo, importFile, importUrl, importFileBytes, addFileToDb, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
+         updateFileInfo, importUrl, importFileBytes, addFileToDb, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
          openFileWithApp, getAppConfig, getIndexRecoveryInfo, clearIndexRecoveryInfo, setLastSelectedItemIndex,
          dedupGetGroup, dedupDeleteSelected, getQueryFilePosition, getFolderSearchExcluded } from '@/common/api'; 
 import { config, libConfig } from '@/common/config';
@@ -1156,45 +1156,14 @@ let domDragLeave: ((e: DragEvent) => void) | null = null;
 let domDragOver: ((e: DragEvent) => void) | null = null;
 let domDrop: ((e: DragEvent) => void) | null = null;
 
-function getDropTextUris(dt: DataTransfer | null) {
-  const uris = (dt?.getData('text/uri-list') || '')
-    .split(/\r?\n/)
-    .map(uri => uri.trim())
-    .filter(uri => uri && !uri.startsWith('#'));
-  const plainText = (dt?.getData('text/plain') || '').trim();
-  if (plainText && !uris.includes(plainText)) uris.push(plainText);
-  return uris;
-}
-
-function fileUriToPath(uri: string) {
-  try {
-    const url = new URL(uri);
-    if (url.protocol !== 'file:' || (url.hostname && url.hostname !== 'localhost')) return '';
-    const path = decodeURIComponent(url.pathname);
-    return /^\/[A-Za-z]:\//.test(path) ? path.slice(1) : path;
-  } catch {
-    return '';
-  }
-}
-
-function getExternalDropFilePaths(dt: DataTransfer | null) {
-  return getDropTextUris(dt)
-    .map(fileUriToPath)
-    .filter(Boolean);
-}
-
 function getExternalDropUrl(dt: DataTransfer | null) {
-  return getDropTextUris(dt)
-    .find(url => url.startsWith('http://') || url.startsWith('https://')) || '';
+  const url = (dt?.getData('text/uri-list') || dt?.getData('text/plain') || '').trim();
+  return url.startsWith('http://') || url.startsWith('https://') ? url : '';
 }
 
 function hasExternalDomDrop(event: DragEvent) {
   const dt = event.dataTransfer;
-  return !isContentInternalDrag.value && !!dt && (
-    dt.files.length > 0 ||
-    getExternalDropFilePaths(dt).length > 0 ||
-    !!getExternalDropUrl(dt)
-  );
+  return !isContentInternalDrag.value && !!dt && (dt.files.length > 0 || !!getExternalDropUrl(dt));
 }
 
 function hasExternalDragIntent(event: DragEvent) {
@@ -2529,25 +2498,6 @@ onMounted( async() => {
       }
       // Fall through to URL handling — some browsers provide both
       // file-like items and text/uri-list.
-    }
-    const filePaths = getExternalDropFilePaths(dt);
-    if (filePaths.length > 0) {
-      let imported = 0;
-      for (const filePath of filePaths) {
-        try {
-          const file = await importFile(filePath, folderId, folderPath);
-          if (file) imported++;
-        } catch (err) {
-          console.error('Failed to import file URI:', filePath, err);
-        }
-      }
-      if (imported > 0) {
-        await updateContent();
-        toast.success(t('msgbox.drop_import.success', { count: imported }));
-      } else {
-        toast.warning(t('msgbox.drop_import.no_files'));
-      }
-      return;
     }
     const url = getExternalDropUrl(dt);
     if (url) {
