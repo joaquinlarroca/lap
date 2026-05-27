@@ -343,6 +343,10 @@
             ref="histogramRef"
             :source="histogramSource"
             :adjustments="histogramAdjustments"
+            :crop="histogramCrop"
+            :rotate="rotate"
+            :flip-horizontal="isFlippedX"
+            :flip-vertical="isFlippedY"
             :apply-adjustments="true"
           />
         </section>
@@ -657,6 +661,16 @@ type AdjustmentValues = {
 
 const histogramRef = ref<InstanceType<typeof ImageHistogram> | null>(null);
 const histogramSource = computed(() => imageSrc.value || fileInfo.value?.thumbnail || '');
+const histogramCrop = computed(() => (
+  cropApplied.value && crop.value.width > 0 && crop.value.height > 0
+    ? {
+      x: crop.value.left,
+      y: crop.value.top,
+      width: crop.value.width,
+      height: crop.value.height,
+    }
+    : null
+));
 const histogramAdjustments = computed<AdjustmentValues>(() => ({
   brightness: brightness.value,
   contrast: contrast.value,

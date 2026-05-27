@@ -85,6 +85,22 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  crop: {
+    type: Object as () => { x: number; y: number; width: number; height: number } | null,
+    default: null,
+  },
+  rotate: {
+    type: Number,
+    default: 0,
+  },
+  flipHorizontal: {
+    type: Boolean,
+    default: false,
+  },
+  flipVertical: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 type AdjustmentValues = {
@@ -347,6 +363,70 @@ function applyHistogramAdjustments(data: Uint8ClampedArray, width: number, heigh
   }
 }
 
+function normalizeRotate(degrees: number) {
+  return ((Math.round(degrees / 90) * 90) % 360 + 360) % 360;
+}
+
+function getHistogramSampleRect(img: HTMLImageElement) {
+  const sourceWidth = img.naturalWidth || img.width;
+  const sourceHeight = img.naturalHeight || img.height;
+  const rotate = normalizeRotate(props.rotate);
+  const processedWidth = rotate === 90 || rotate === 270 ? sourceHeight : sourceWidth;
+  const processedHeight = rotate === 90 || rotate === 270 ? sourceWidth : sourceHeight;
+  const crop = props.crop;
+
+  if (!crop || crop.width <= 0 || crop.height <= 0) {
+    return { x: 0, y: 0, width: processedWidth, height: processedHeight, sourceWidth, sourceHeight, rotate };
+  }
+
+  const x = Math.max(0, Math.min(Math.round(crop.x), processedWidth - 1));
+  const y = Math.max(0, Math.min(Math.round(crop.y), processedHeight - 1));
+  const width = Math.max(1, Math.min(Math.round(crop.width), processedWidth - x));
+  const height = Math.max(1, Math.min(Math.round(crop.height), processedHeight - y));
+  return { x, y, width, height, sourceWidth, sourceHeight, rotate };
+}
+
+function applyHistogramSourceTransform(
+  ctx: CanvasRenderingContext2D,
+  sourceWidth: number,
+  sourceHeight: number,
+  rotate: number,
+) {
+  if (rotate === 90) {
+    ctx.translate(sourceHeight, 0);
+    ctx.rotate(Math.PI / 2);
+  } else if (rotate === 180) {
+    ctx.translate(sourceWidth, sourceHeight);
+    ctx.rotate(Math.PI);
+  } else if (rotate === 270) {
+    ctx.translate(0, sourceWidth);
+    ctx.rotate((Math.PI * 3) / 2);
+  }
+
+  if (props.flipHorizontal) {
+    ctx.translate(sourceWidth, 0);
+    ctx.scale(-1, 1);
+  }
+  if (props.flipVertical) {
+    ctx.translate(0, sourceHeight);
+    ctx.scale(1, -1);
+  }
+}
+
+function drawHistogramSample(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  size: number,
+) {
+  const sample = getHistogramSampleRect(img);
+  ctx.save();
+  ctx.scale(size / sample.width, size / sample.height);
+  ctx.translate(-sample.x, -sample.y);
+  applyHistogramSourceTransform(ctx, sample.sourceWidth, sample.sourceHeight, sample.rotate);
+  ctx.drawImage(img, 0, 0);
+  ctx.restore();
+}
+
 function buildHistogramData(img: HTMLImageElement) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -358,7 +438,7 @@ function buildHistogramData(img: HTMLImageElement) {
   const size = 512;
   canvas.width = size;
   canvas.height = size;
-  ctx.drawImage(img, 0, 0, size, size);
+  drawHistogramSample(ctx, img, size);
 
   try {
     const imageData = ctx.getImageData(0, 0, size, size);
@@ -449,7 +529,7 @@ function computeAutoPresetValues(img: HTMLImageElement): AdjustmentValues {
   const size = 256;
   canvas.width = size;
   canvas.height = size;
-  ctx.drawImage(img, 0, 0, size, size);
+  drawHistogramSample(ctx, img, size);
 
   try {
     const data = ctx.getImageData(0, 0, size, size).data;
@@ -696,6 +776,14 @@ function formatLegendValue(value: number) {
 }
 
 watch(() => props.source, updateHistogram, { immediate: true });
+watch(
+  () => [props.crop, props.rotate, props.flipHorizontal, props.flipVertical],
+  () => {
+    autoPresetValues = null;
+    scheduleHistogramRecompute();
+  },
+  { deep: true }
+);
 watch(
   () => props.adjustments,
   () => {
