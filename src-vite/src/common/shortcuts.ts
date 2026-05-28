@@ -122,7 +122,7 @@ export const SHORTCUTS: readonly ShortcutDefinition[] = [
     id: 'app.preferences',
     contexts: ['global'],
     defaultBindings: [
-      { key: ',', modifiers: ['cmdOrCtrl'], label: { mac: '⌘,', windows: 'Ctrl+,', linux: 'Ctrl+,' } },
+      { code: 'Comma', modifiers: ['cmdOrCtrl'], label: { mac: '⌘,', windows: 'Ctrl+,', linux: 'Ctrl+,' } },
     ],
   },
   {

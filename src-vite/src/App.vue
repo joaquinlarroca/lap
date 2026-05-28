@@ -15,7 +15,7 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useConfigStore } from '@/stores/configStore';
 import { useLibraryStore } from '@/stores/libraryStore';
 import { clearIndexRecoveryInfo } from '@/common/api';
-import { setTheme, SCALE_VALUES } from '@/common/utils';
+import { isMac, setTheme, SCALE_VALUES } from '@/common/utils';
 import { matchesShortcut } from '@/common/shortcuts';
 import ToastContainer from '@/components/ToastContainer.vue';
 
@@ -117,6 +117,13 @@ onUnmounted(async () => {
 
 const handleKeyDown = (event) => {
   if (handleMainWindowScaleShortcut(event)) {
+    return;
+  }
+
+  if (!isMac && matchesShortcut('app.preferences', event)) {
+    event.preventDefault();
+    event.stopPropagation();
+    emit('app-open-preferences');
     return;
   }
 

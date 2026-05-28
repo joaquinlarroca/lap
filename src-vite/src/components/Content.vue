@@ -1273,6 +1273,16 @@ function showEmptyContent(requestId: number) {
   contentReady.value = true;
 }
 
+function showLoadingContent(requestId: number) {
+  if (requestId !== currentContentRequestId) return;
+  fileList.value = [];
+  totalFileCount.value = 0;
+  totalFileSize.value = 0;
+  timelineData.value = [];
+  isLoading.value = true;
+  contentReady.value = false;
+}
+
 // Similar Search Mode State
 const tempViewMode = ref<'none' | 'similar' | 'album' | 'person'>('none');
 const dedupQueryParams = computed(() => {
@@ -3705,11 +3715,7 @@ function enterSimilarSearchMode(file: any) {
 
   // 4. Perform Search (reusing existing API call logic)
   const requestId = ++currentContentRequestId;
-  
-  // Reset list for loading state
-  fileList.value = [];
-  totalFileCount.value = 0;
-  totalFileSize.value = 0;
+  showLoadingContent(requestId);
   
   // Reset scroll and selection
   scrollPosition.value = 0;
@@ -3778,11 +3784,7 @@ async function enterPersonSearchMode(file: any) {
 
   // 5. Perform Search
   const requestId = ++currentContentRequestId;
-  
-  // Reset list for loading state
-  fileList.value = [];
-  totalFileCount.value = 0;
-  totalFileSize.value = 0;
+  showLoadingContent(requestId);
   
   // Reset scroll and selection
   scrollPosition.value = 0;
