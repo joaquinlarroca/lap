@@ -5,6 +5,7 @@
     @mousedown.capture="activateContentPane"
     @mouseenter="isContentHovered = true"
     @mouseleave="isContentHovered = false"
+    @wheel.capture="handleContentWheel"
     @keydown="handleLocalKeyDown"
     @dragstart.capture="markContentInternalDrag"
     @dragend.capture="clearContentInternalDrag"
@@ -1990,6 +1991,19 @@ function isContentInteractionActive() {
 
 function activateContentPane() {
   uiStore.setActivePane('content');
+}
+
+function handleContentWheel(event: WheelEvent) {
+  if (!isWin || !event.ctrlKey) return;
+  if (getActivePreviewMode() !== 'none') return;
+  if (!isContentInteractionActive()) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const currentSize = Number(config.settings.grid.size || 160);
+  const delta = event.deltaY < 0 ? 10 : -10;
+  config.settings.grid.size = Math.max(120, Math.min(360, currentSize + delta));
 }
 
 function isTextInputFocused() {
