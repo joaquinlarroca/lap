@@ -34,7 +34,7 @@
     >
       <div
         v-if="isDateHeader(item)"
-        class="w-full h-full flex items-end gap-2 p-2 text-sm font-medium text-base-content/70 select-none group"
+        class="w-full h-full flex items-center gap-1 px-1 text-base-content/70 select-none group"
         :class="{ 'cursor-pointer hover:text-base-content': selectMode }"
         @click="selectMode && toggleDateGroupSelection(item)"
       >
@@ -47,7 +47,9 @@
           @click.stop
           @change="(event) => toggleDateGroupSelection(item, (event.target as HTMLInputElement).checked)"
         />
-        {{ item.label }}
+        <component :is="config.settings.grid.dateGrouping === 1 ? IconCalendarDay : IconCalendarMonth" v-if="!selectMode" class="w-5 h-5" />
+        <span>{{ item.label }}</span>
+        <span class="text-base-content/30 text-xs">({{ (item.endIndex - item.startIndex).toLocaleString() }})</span>
       </div>
       <div v-else class="w-full h-full flex items-center justify-center">
         <Thumbnail
@@ -95,9 +97,11 @@ import { watch, ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@/stores/uiStore';
 import { config } from '@/common/config';
+import { formatDate } from '@/common/utils';
 import Thumbnail from '@/components/Thumbnail.vue';
 import VirtualScroll from '@/components/VirtualScroll.vue';
 import { calculateJustifiedLayout, calculateLinearRowLayout, calculateLinearColumnLayout, calculateMasonryLayout, type Geometry } from '@/common/layout';
+import { IconCalendarDay, IconCalendarMonth } from '@/common/icons';
 
 const props = withDefaults(defineProps<{
   selectedItemIndex: number;
@@ -133,12 +137,13 @@ const emit = defineEmits([
 ]);
 
 const uiStore = useUIStore();
-const { locale } = useI18n();
+const { locale, messages } = useI18n();
+const localeMsg = computed(() => messages.value[locale.value] as any);
 const containerRef = ref<HTMLElement | null>(null);
 const scroller = ref<any>(null);
 const columnCount = ref(4);
 const containerWidth = ref(0);
-const headerHeight = 32;
+const headerHeight = 48;
 
 function isGeometryGridStyle(style: number) {
   return style === 2 || style === 3;
@@ -158,11 +163,10 @@ function formatDateGroupLabel(marker: any, mode: number) {
   const date = Number(marker.date || 1);
   if (!year || !month) return '';
 
-  const value = new Date(year, month - 1, mode === 1 ? date : 1);
-  const options: Intl.DateTimeFormatOptions = mode === 1
-    ? { year: 'numeric', month: 'long', day: 'numeric' }
-    : { year: 'numeric', month: 'long' };
-  return new Intl.DateTimeFormat(locale.value, options).format(value);
+  if (mode === 1) {
+    return formatDate(year, month, date, localeMsg.value.format.date_long);
+  }
+  return formatDate(year, month, 1, localeMsg.value.format.month);
 }
 
 const dateGroupMarkers = computed(() => {
