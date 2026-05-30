@@ -226,7 +226,7 @@ const getMenuItemsForFolder = (folder: any) => {
     {
       label: !folder?.is_favorite ? localeMsg.value.menu.meta.favorite : localeMsg.value.menu.meta.unfavorite,
       icon: !folder?.is_favorite ? IconHeart : IconHeart,
-      disabled: isRoot,
+      // disabled: isRoot,
       action: () => {
         toggleFavorite();
       }
@@ -234,7 +234,7 @@ const getMenuItemsForFolder = (folder: any) => {
     {
       label: folder?.is_excluded_from_search ? localeMsg.value.menu.album.include_in_search : localeMsg.value.menu.album.exclude_from_search,
       icon: folder?.is_excluded_from_search ? IconUnhide : IconHide,
-      disabled: isRoot,
+      // disabled: isRoot,
       action: () => {
         toggleFolderSearchExcluded(folder);
       }
