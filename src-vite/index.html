@@ -7,7 +7,7 @@
     <script>
       (function() {
         try {
-          var config = JSON.parse(localStorage.getItem('configStore'));
+          var config = JSON.parse(localStorage.getItem('%CONFIG_STORE_KEY%'));
           var isDark = true;
           if (config && config.settings && config.settings.appearance === 0) {
             isDark = false;
