@@ -1116,9 +1116,22 @@ pub fn get_folder_files(
 
     let mut new_count = 0;
     let mut updated_count = 0;
+    let resolved_folder_id = match AFolder::fetch(folder_path) {
+        Ok(Some(folder)) => {
+            let database_folder_id = folder.id.unwrap_or(folder_id);
+            if database_folder_id != folder_id {
+                eprintln!(
+                    "get_folder_files: using folder id {} from DB for path {} instead of stale id {}",
+                    database_folder_id, folder_path, folder_id
+                );
+            }
+            database_folder_id
+        }
+        _ => folder_id,
+    };
 
     let mut files: Vec<AFile> = if from_db_only {
-        match AFile::get_files_by_folder_id(folder_id) {
+        match AFile::get_files_by_folder_id(resolved_folder_id) {
             Ok(files) => files
                 .into_iter()
                 .filter(|file| {
@@ -1149,7 +1162,7 @@ pub fn get_folder_files(
             if let Some(ftype) = get_file_type(file_path_str) {
                 if matches_file_type_filter(file_type, ftype) {
                     let now = Utc::now().timestamp_millis();
-                    match AFile::add_to_db(folder_id, file_path_str, ftype, now) {
+                    match AFile::add_to_db(resolved_folder_id, file_path_str, ftype, now) {
                         Ok((file, status)) => {
                             if status == 1 {
                                 new_count += 1;
@@ -1571,12 +1584,14 @@ pub fn sync_single_folder(
     };
     let folder = AFolder::fetch(folder_path)?.ok_or_else(|| format!("Folder not found: {}", folder_path))?;
 
-    // Validate that the fetched folder matches the caller-provided IDs.
-    if folder.id != Some(folder_id) {
-        return Err(format!(
-            "Folder id mismatch: expected {}, found {:?}",
-            folder_id, folder.id
-        ));
+    let resolved_folder_id = folder
+        .id
+        .ok_or_else(|| format!("Folder has no id: {}", folder_path))?;
+    if resolved_folder_id != folder_id {
+        eprintln!(
+            "sync_single_folder: using DB folder id {} for path {} instead of stale id {}",
+            resolved_folder_id, folder_path, folder_id
+        );
     }
     if folder.album_id != album_id {
         return Err(format!(
@@ -1600,13 +1615,14 @@ pub fn sync_single_folder(
     let child_folders = scan_new_child_folders(album_id, folder_path)?;
     let new_folder_count = child_folders.len() as u32;
 
-    let outcome = sync_folder_direct_files(folder_id, album_id, folder_path, 0)?; // 0 = foreground, never cancel
+    let outcome =
+        sync_folder_direct_files(resolved_folder_id, album_id, folder_path, 0)?; // 0 = foreground, never cancel
     for task in outcome.tasks {
         schedule_synced_file_processing(app_handle.clone(), task);
     }
 
     let mtime = info.modified;
-    let _ = AFolder::update_column(folder_id, "modified_at", &mtime);
+    let _ = AFolder::update_column(resolved_folder_id, "modified_at", &mtime);
 
     Ok(FolderMtimeSyncResult {
         dirty_folder_count: 1,
