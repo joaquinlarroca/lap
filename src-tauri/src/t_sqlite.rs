@@ -2543,6 +2543,14 @@ impl AThumb {
                     return false;
                 }
 
+                if file
+                    .file_path
+                    .as_deref()
+                    .is_some_and(t_image::is_exr_path)
+                {
+                    return false;
+                }
+
                 let width = file.width.unwrap_or(0).max(0) as u32;
                 let height = file.height.unwrap_or(0).max(0) as u32;
                 width > 0 && height > 0 && width <= thumbnail_size && height <= thumbnail_size
