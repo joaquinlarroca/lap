@@ -38,7 +38,7 @@ pub fn get_image_dimensions(file_path: &str) -> Result<(u32, u32), String> {
         return t_jxl::get_jxl_dimensions(file_path);
     }
 
-    if is_exr_path(file_path) {
+    if is_ffmpeg_backed_image_path(file_path) {
         let metadata = crate::t_video::get_video_metadata(file_path)?;
         return Ok((metadata.width, metadata.height));
     }
@@ -433,7 +433,7 @@ pub fn get_image_thumbnail(
         return t_jxl::get_jxl_thumbnail(file_path, thumbnail_size);
     }
 
-    if is_exr_path(file_path) {
+    if is_ffmpeg_backed_image_path(file_path) {
         return crate::t_video::get_video_thumbnail_sync(file_path, thumbnail_size, None, None);
     }
 
@@ -1087,14 +1087,12 @@ fn is_avif_path(file_path: &str) -> bool {
     )
 }
 
-pub(crate) fn is_exr_path(file_path: &str) -> bool {
-    matches!(
-        t_utils::get_file_extension(file_path)
-            .unwrap_or_default()
-            .to_lowercase()
-            .as_str(),
-        "exr"
-    )
+pub(crate) fn is_ffmpeg_backed_image_path(file_path: &str) -> bool {
+    t_utils::get_file_extension(file_path).is_some_and(|extension| {
+        crate::t_common::FFMPEG_BACKED_IMGS
+            .iter()
+            .any(|item| item.eq_ignore_ascii_case(&extension))
+    })
 }
 
 fn should_generate_preview_for_file(file_path: &str, file_type: i64) -> bool {
@@ -1102,7 +1100,7 @@ fn should_generate_preview_for_file(file_path: &str, file_type: i64) -> bool {
         || crate::t_libraw::is_tiff_path(file_path)
         || t_jxl::is_jxl_path(file_path)
         || is_heic_path(file_path)
-        || is_exr_path(file_path)
+        || is_ffmpeg_backed_image_path(file_path)
         || cfg!(target_os = "linux") && is_avif_path(file_path)
 }
 
@@ -1148,7 +1146,7 @@ async fn get_generated_preview_bytes(file_path: &str) -> Result<Option<Vec<u8>>,
         }
     }
 
-    if is_exr_path(file_path) {
+    if is_ffmpeg_backed_image_path(file_path) {
         return crate::t_video::get_video_thumbnail(file_path, 4096, None, None).await;
     }
 
@@ -1548,9 +1546,9 @@ pub async fn get_file_image_bytes_cached(file_path: &str) -> Result<Vec<u8>, Str
             t_video::get_video_thumbnail(file_path, 4096, None, None).await?
                 .ok_or_else(|| format!("Failed to resolve HEIC preview image: {}", file_path))?
         }
-    } else if is_exr_path(file_path) {
+    } else if is_ffmpeg_backed_image_path(file_path) {
         crate::t_video::get_video_thumbnail(file_path, 4096, None, None).await?
-            .ok_or_else(|| format!("Failed to resolve EXR preview image: {}", file_path))?
+            .ok_or_else(|| format!("Failed to resolve FFmpeg-backed preview image: {}", file_path))?
     } else if cfg!(target_os = "linux") && is_avif_path(file_path) {
         get_image_thumbnail(file_path, get_image_orientation(file_path), 4096)?
             .ok_or_else(|| format!("Failed to resolve AVIF preview image: {}", file_path))?

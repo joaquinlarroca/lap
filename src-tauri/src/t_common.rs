@@ -4,7 +4,13 @@
 
 // Image support
 pub const NORMAL_IMGS: &[&str] = &[
-    "jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "avif", "heic", "heif", "hif", "jxl", "exr",
+    "jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp", "avif", "heic", "heif", "hif", "jxl",
+];
+
+// Image formats decoded through the bundled FFmpeg sidecar.
+pub const FFMPEG_BACKED_IMGS: &[&str] = &[
+    "exr", "hdr", "rgbe", "psd", "jp2", "j2k", "j2c", "jpc", "jpf", "jpx", "dpx", "dds", "tga",
+    "qoi", "fits", "fit", "fts",
 ];
 
 // RAW support

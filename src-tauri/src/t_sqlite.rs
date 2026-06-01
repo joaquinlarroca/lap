@@ -2546,7 +2546,7 @@ impl AThumb {
                 if file
                     .file_path
                     .as_deref()
-                    .is_some_and(t_image::is_exr_path)
+                    .is_some_and(t_image::is_ffmpeg_backed_image_path)
                 {
                     return false;
                 }

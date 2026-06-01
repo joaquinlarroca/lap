@@ -521,7 +521,11 @@ export function shouldUseBackendPreview(filePath = '', fileType = 0): boolean {
   if (isLinux && extension === 'avif') {
     return true;
   }
-  return ['tif', 'tiff', 'jxl', 'heic', 'heif', 'hif', 'exr'].includes(extension);
+  return [
+    'tif', 'tiff', 'jxl', 'heic', 'heif', 'hif',
+    'exr', 'hdr', 'rgbe', 'psd', 'jp2', 'j2k', 'j2c', 'jpc', 'jpf', 'jpx',
+    'dpx', 'dds', 'tga', 'qoi', 'fits', 'fit', 'fts'
+  ].includes(extension);
 }
 
 export function getThumbnailDataUrl(

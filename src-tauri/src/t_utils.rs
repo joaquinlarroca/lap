@@ -1750,7 +1750,7 @@ pub fn get_file_type(file_path: &str) -> Option<i64> {
         .and_then(|ext| ext.to_str())?;
     let contains_ext = |exts: &[&str]| exts.iter().any(|item| item.eq_ignore_ascii_case(ext));
 
-    if contains_ext(t_common::NORMAL_IMGS) {
+    if contains_ext(t_common::NORMAL_IMGS) || contains_ext(t_common::FFMPEG_BACKED_IMGS) {
         return Some(1);
     }
 
@@ -2259,10 +2259,14 @@ fn should_use_heavy_lane(
         return true;
     }
 
+    if crate::t_image::is_ffmpeg_backed_image_path(file_path) {
+        return true;
+    }
+
     if let Some(ext) = Path::new(file_path).extension().and_then(|ext| ext.to_str()) {
         return matches!(
             ext.to_ascii_lowercase().as_str(),
-            "heic" | "heif" | "tif" | "tiff" | "psd" | "jxl"
+            "heic" | "heif" | "tif" | "tiff" | "jxl"
         );
     }
 
