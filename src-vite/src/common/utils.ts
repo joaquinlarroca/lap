@@ -193,7 +193,7 @@ export function formatDimensionText(
   height: number,
   showRatio: boolean = false
 ): string {
-  if (width <= 0 || height <= 0) return '';
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return '';
 
   const pixel = width * height;
   let pixelText: string;
@@ -230,6 +230,7 @@ const FLOAT_EPSILON = 0.001;
 const MAX_SIMPLIFIED_DENOMINATOR = 20;
 
 function gcd(a: number, b: number): number {
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return 1;
   return b === 0 ? a : gcd(b, a % b);
 }
 
