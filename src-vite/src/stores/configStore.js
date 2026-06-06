@@ -119,7 +119,7 @@ export const useConfigStore = defineStore('configStore', {
       mouseWheelMode: 1,         // 0: previous/next, 1: zoom in/out (default)
       slideShowInterval: 1,      // slide show interval in seconds [1, 3, 5, 10, 30, 60]
       slideShowTransition: 0,    // 0: Slide, 1: Fade, 2: None
-      navigatorViewMode: 0,      // 0: Auto, 1: Always hide, 2: Always show
+      navigatorViewMode: 0,      // 0: Auto, 1: Always show, 2: Always hide
       navigatorViewSize: 240,    // navigator view size (160, 240, 320, 400)
       autoPlayVideo: true,       // auto play video
       loopVideo: false,          // loop video (only effective when autoPlayVideo is off)

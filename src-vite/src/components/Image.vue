@@ -143,9 +143,11 @@
     <!-- Navigator view -->
     <transition name="fade">
       <!-- nav container -->
-      <div v-if="(config.settings.navigatorViewMode === 0 && isGrabbing) || config.settings.navigatorViewMode === 1" 
+      <div v-if="showNavigator"
         class="absolute right-4 bottom-4 outline outline-gray-50 overflow-hidden shadow-lg shadow-gray-500 z-20" 
         :style="navContainerStyle"
+        @mouseenter="pauseNavigatorAutoHide"
+        @mouseleave="resetNavigatorAutoHide"
         @wheel="handleNavBoxWheel"
         @click="handleNavBoxClick"
         @dblclick.stop="toggleZoomFit"
@@ -255,6 +257,12 @@ const imageSizeRotated = ref([{ width: 0, height: 0 }, { width: 0, height: 0 }])
 
 const isDraggingImage = ref(false);         // Dragging state
 const isGrabbing = ref(false);              // Grabbing state
+const navigatorAutoVisible = ref(true);
+const showNavigator = computed(() =>
+  config.settings.navigatorViewMode === 1
+  || (config.settings.navigatorViewMode === 0 && isGrabbing.value && navigatorAutoVisible.value)
+);
+let navigatorAutoHideTimer: ReturnType<typeof setTimeout> | null = null;
 const noTransition = ref(false);            // Disable transition temporarily
 const lastMousePosition = ref({ x: 0, y: 0 }); // Last mouse position for drag calculations
 const mousePosition = ref({ x: 0, y: 0 });  // Current mouse position
@@ -982,6 +990,9 @@ onBeforeUnmount(() => {
   if (loadingTimeout) { // Clear timeout on unmount
     clearTimeout(loadingTimeout);
   }
+  if (navigatorAutoHideTimer) {
+    clearTimeout(navigatorAutoHideTimer);
+  }
   cancelWarmImageScheduling();
 });
 
@@ -1389,6 +1400,38 @@ watch(() => scale.value[activeImage.value], (newValue) => {
     maxScale: maxScale.value 
   });
 });
+
+function resetNavigatorAutoHide() {
+  if (navigatorAutoHideTimer) {
+    clearTimeout(navigatorAutoHideTimer);
+    navigatorAutoHideTimer = null;
+  }
+  navigatorAutoVisible.value = true;
+  if (config.settings.navigatorViewMode === 0) {
+    navigatorAutoHideTimer = setTimeout(() => {
+      navigatorAutoVisible.value = false;
+      navigatorAutoHideTimer = null;
+    }, 3000);
+  }
+}
+
+function pauseNavigatorAutoHide() {
+  if (navigatorAutoHideTimer) {
+    clearTimeout(navigatorAutoHideTimer);
+    navigatorAutoHideTimer = null;
+  }
+}
+
+watch(
+  () => [
+    config.settings.navigatorViewMode,
+    scale.value[activeImage.value],
+    position.value[activeImage.value].x,
+    position.value[activeImage.value].y,
+  ],
+  resetNavigatorAutoHide,
+  { immediate: true }
+);
 
 // watch zoom fit changes
 watch(() => props.isZoomFit, (newValue) => {
