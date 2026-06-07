@@ -228,7 +228,8 @@
       "monthly": "Monatlich",
       "daily": "Täglich",
       "time_asc": "Zeit Auf",
-      "time_desc": "Zeit Ab"
+      "time_desc": "Zeit Ab",
+      "back": "Zurück"
     }
   },
   "info_panel": {

@@ -228,7 +228,8 @@
       "monthly": "월별",
       "daily": "일별",
       "time_asc": "오래된 순",
-      "time_desc": "최신 순"
+      "time_desc": "최신 순",
+      "back": "뒤로"
     }
   },
   "info_panel": {

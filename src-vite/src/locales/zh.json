@@ -228,7 +228,8 @@
       "monthly": "按月",
       "daily": "按日",
       "time_asc": "时间升序",
-      "time_desc": "时间降序"
+      "time_desc": "时间降序",
+      "back": "返回"
     }
   },
   "info_panel": {

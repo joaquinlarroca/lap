@@ -228,7 +228,8 @@
       "monthly": "Mensual",
       "daily": "Diario",
       "time_asc": "Tiempo asc",
-      "time_desc": "Tiempo desc"
+      "time_desc": "Tiempo desc",
+      "back": "Volver"
     }
   },
   "info_panel": {

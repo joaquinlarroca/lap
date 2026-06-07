@@ -27,6 +27,13 @@
     >
       <!-- title -->
       <div class="mr-1 flex flex-row items-center gap-1 min-w-0 flex-1 overflow-hidden" data-tauri-drag-region>
+        <TButton v-if="tempViewMode !== 'none'"
+          :icon="IconPrev"
+          :buttonSize="'medium'"
+          :tooltip="$t('toolbar.tooltip.back')"
+          :selected="true"
+          @click="exitTempViewMode"
+        />
         <component v-if="currentTitleIcon" 
           :is="currentTitleIcon" 
           class="t-icon-size-sm shrink-0"
@@ -58,13 +65,6 @@
             </ul>
           </div>
         </div>
-        <TButton v-if="tempViewMode !== 'none'" 
-          :icon="IconRestore" 
-          :buttonSize="'medium'"
-          :tooltip="$t('toolbar.tooltip.restore')"
-          :selected="true"
-          @click="exitTempViewMode" 
-        />
       </div>
 
       <!-- toolbar -->
@@ -671,6 +671,7 @@ import {
   IconArrowUp,
   IconArrowDown,
   IconDownload,
+  IconPrev,
 } from '@/common/icons';
 
 const thumbnailPlaceholder = new URL('@/assets/images/image-file.png', import.meta.url).href;

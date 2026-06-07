@@ -228,7 +228,8 @@
       "monthly": "月別",
       "daily": "日別",
       "time_asc": "古い順",
-      "time_desc": "新しい順"
+      "time_desc": "新しい順",
+      "back": "戻る"
     }
   },
   "info_panel": {
