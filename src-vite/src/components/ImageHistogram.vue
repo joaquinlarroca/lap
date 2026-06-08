@@ -122,6 +122,7 @@ type AdjustmentValues = {
 
 const HISTOGRAM_BIN_COUNT = 256;
 const HISTOGRAM_HEIGHT = 58;
+const HISTOGRAM_TONE_RANGE_EDGE_BINS = 8;
 const histogramData = new Float32Array(HISTOGRAM_BIN_COUNT);
 const histogramDataR = new Float32Array(HISTOGRAM_BIN_COUNT);
 const histogramDataG = new Float32Array(HISTOGRAM_BIN_COUNT);
@@ -235,7 +236,7 @@ function writeNormalizedHistogram(counts: Float32Array, output: Float32Array) {
   }
 
   for (let i = 0; i < HISTOGRAM_BIN_COUNT; i++) {
-    output[i] = (counts[i] / maxVal) * HISTOGRAM_HEIGHT;
+    output[i] = Math.min((counts[i] / maxVal) * HISTOGRAM_HEIGHT, HISTOGRAM_HEIGHT);
   }
 }
 
@@ -691,16 +692,34 @@ function sampleSmoothedHistogram(smoothed: Float32Array, center: number, radius 
   return count > 0 ? sum / count : 0;
 }
 
+function getToneRangeDisplayMax(smoothed: Float32Array) {
+  let maxVal = 0;
+  for (
+    let i = HISTOGRAM_TONE_RANGE_EDGE_BINS;
+    i < HISTOGRAM_BIN_COUNT - HISTOGRAM_TONE_RANGE_EDGE_BINS;
+    i++
+  ) {
+    const val = Math.max(0, sampleSmoothedHistogram(smoothed, i));
+    if (val > maxVal) maxVal = val;
+  }
+  return maxVal;
+}
+
 function buildPathFromSmoothed(smoothed: Float32Array) {
   const width = 256;
   const height = 64;
   const sampledPoints: { x: number; y: number }[] = [];
+  const toneRangeMax = getToneRangeDisplayMax(smoothed);
+  const scale = toneRangeMax > 0 ? HISTOGRAM_HEIGHT / toneRangeMax : 1;
 
   for (let i = 0; i < HISTOGRAM_BIN_COUNT; i += 2) {
-    const val = Math.max(0, sampleSmoothedHistogram(smoothed, i));
+    const val = Math.min(Math.max(0, sampleSmoothedHistogram(smoothed, i)) * scale, HISTOGRAM_HEIGHT);
     sampledPoints.push({ x: i, y: height - val });
   }
-  const lastVal = Math.max(0, sampleSmoothedHistogram(smoothed, HISTOGRAM_BIN_COUNT - 1));
+  const lastVal = Math.min(
+    Math.max(0, sampleSmoothedHistogram(smoothed, HISTOGRAM_BIN_COUNT - 1)) * scale,
+    HISTOGRAM_HEIGHT,
+  );
   sampledPoints.push({ x: width, y: height - lastVal });
 
   if (sampledPoints.length < 2) return '';
@@ -768,7 +787,11 @@ const legendItems = computed(() => [
 ]);
 
 function toggleChannel(channel: HistogramChannel) {
-  config.infoPanel.histogramChannels = histogramChannelMask.value ^ HISTOGRAM_CHANNEL_BITS[channel];
+  const channelBit = HISTOGRAM_CHANNEL_BITS[channel];
+  const currentMask = histogramChannelMask.value;
+  const isOnlyVisibleChannel = currentMask === channelBit;
+  if (isOnlyVisibleChannel) return;
+  config.infoPanel.histogramChannels = currentMask ^ channelBit;
 }
 
 function showAllChannels() {
