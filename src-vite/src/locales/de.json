@@ -39,13 +39,13 @@
   },
   "welcome": {
     "title": "Willkommen bei Lap",
-    "description": "Deine lokalen Fotos und Videos, schön organisiert und sofort durchsuchbar.",
+    "description": "Deine lokale Fotobibliothek. Schnell, durchsuchbar und immer unter deiner Kontrolle.",
     "add_album_title": "Beginne mit dem Hinzufügen eines Albums",
-    "add_album_description": "Wähle einen Ordner zum Scannen deiner Fotos und Videos.",
+    "add_album_description": "Wähle einen Ordner und lass Lap deine Fotos und Videos organisieren.",
     "search_title": "Suche nach Erinnerung",
-    "search_description": "Beschreibe, wonach du suchst, finde ähnliche Fotos und suche in über 50 Sprachen mit einem optionalen Modell-Download.",
+    "search_description": "Suche mit natürlicher Sprache, entdecke ähnliche Bilder und finde sofort, was du suchst.",
     "drag_title": "Zum Importieren ziehen",
-    "drag_description": "Ziehe Fotos aus dem Finder, Explorer oder Browser direkt in einen geöffneten Album-Ordner."
+    "drag_description": "Ziehe Fotos aus deinem Dateimanager oder Browser direkt in ein Album."
   },
   "search": {
     "title": "Bildsuche",

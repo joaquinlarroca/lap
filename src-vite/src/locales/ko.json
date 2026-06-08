@@ -39,13 +39,13 @@
   },
   "welcome": {
     "title": "Lap에 오신 것을 환영합니다",
-    "description": "로컬 사진과 동영상을 아름답게 정리하고 즉시 검색할 수 있습니다.",
+    "description": "당신의 로컬 사진 라이브러리. 빠르고 검색 가능하며 항상 당신의 통제 아래에 있습니다.",
     "add_album_title": "앨범을 추가하여 시작하기",
-    "add_album_description": "사진과 동영상을 스캔할 폴더를 선택하세요.",
+    "add_album_description": "폴더를 선택하고 Lap이 사진과 동영상을 정리하도록 하세요.",
     "search_title": "기억으로 검색",
-    "search_description": "찾고 있는 것을 설명하고, 유사한 사진을 찾고, 선택적 모델 다운로드로 50개 이상의 언어로 검색하세요.",
+    "search_description": "자연어로 검색하고, 유사한 이미지를 발견하며, 찾고 있는 것을 즉시 찾을 수 있습니다.",
     "drag_title": "드래그하여 가져오기",
-    "drag_description": "Finder, 탐색기 또는 브라우저에서 열린 앨범 폴더로 사진을 직접 드래그하세요."
+    "drag_description": "파일 관리자 또는 브라우저에서 앨범으로 직접 사진을 드래그하세요."
   },
   "search": {
     "title": "이미지 검색",

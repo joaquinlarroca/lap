@@ -39,13 +39,13 @@
   },
   "welcome": {
     "title": "Welcome to Lap",
-    "description": "Your local photos and videos, beautifully organized and instantly searchable.",
+    "description": "Your local photo library. Fast, searchable, and always under your control.",
     "add_album_title": "Start by adding an album",
-    "add_album_description": "Select a folder to scan for your photos and videos.",
+    "add_album_description": "Select a folder and let Lap organize your photos and videos.",
     "search_title": "Search by memory",
-    "search_description": "Describe what you're looking for, find similar photos, and search in 50+ languages with an optional model download.",
+    "search_description": "Search with natural language, discover similar images, and find what you're looking for instantly.",
     "drag_title": "Drag to import",
-    "drag_description": "Drag photos from Finder, Explorer, or your browser directly into any open album folder."
+    "drag_description": "Drag photos from your file manager or browser directly into an album."
   },
   "search": {
     "title": "Image search",

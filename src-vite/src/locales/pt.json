@@ -39,13 +39,13 @@
   },
   "welcome": {
     "title": "Bem-vindo ao Lap",
-    "description": "Suas fotos e vídeos locais, organizados e pesquisáveis instantaneamente.",
+    "description": "Sua biblioteca de fotos local. Rápida, pesquisável e sempre sob seu controle.",
     "add_album_title": "Comece adicionando um álbum",
-    "add_album_description": "Selecione uma pasta para escanear suas fotos e vídeos.",
+    "add_album_description": "Selecione uma pasta e deixe o Lap organizar suas fotos e vídeos.",
     "search_title": "Pesquise por memória",
-    "search_description": "Descreva o que você procura, encontre fotos semelhantes e pesquise em mais de 50 idiomas com um download de modelo opcional.",
+    "search_description": "Pesquise com linguagem natural, descubra imagens semelhantes e encontre o que procura instantaneamente.",
     "drag_title": "Arraste para importar",
-    "drag_description": "Arraste fotos do Finder, Explorador ou navegador diretamente para qualquer pasta de álbum aberta."
+    "drag_description": "Arraste fotos do seu gerenciador de arquivos ou navegador diretamente para um álbum."
   },
   "search": {
     "title": "Pesquisa de imagem",
