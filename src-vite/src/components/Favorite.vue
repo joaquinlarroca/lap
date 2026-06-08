@@ -44,6 +44,7 @@
               :class="[
                 'sidebar-item group',
                 libConfig.favorite.folderId === folder.id ? 'sidebar-item-selected' : 'sidebar-item-hover',
+                folder.is_excluded_from_search ? 'text-base-content/30' : '',
               ]"
               @click="clickFavoriteFolder(folder)"
             >
@@ -51,6 +52,10 @@
               <div class="sidebar-item-label">
                 {{ folder.name }}
               </div>
+              <IconHide
+                v-if="folder.is_excluded_from_search"
+                class="ml-1 mr-1 w-4 h-4 shrink-0 text-base-content/30"
+              />
               <ContextMenu
                 :class="[
                   'ml-auto flex flex-row items-center text-base-content/30',
@@ -119,7 +124,7 @@ import { useI18n } from 'vue-i18n';
 import { getQueryCountAndSum, getFavoriteFolders, setFolderFavorite } from '@/common/api';
 import { getFolderName } from '@/common/utils';
 import ContextMenu from '@/components/ContextMenu.vue';
-import { IconMore, IconFolderFavorite, IconHeart, IconStar, IconStarFilled } from '@/common/icons';
+import { IconMore, IconFolderFavorite, IconHeart, IconStar, IconStarFilled, IconHide } from '@/common/icons';
 
 const props = defineProps({
   titlebar: {
@@ -190,7 +195,7 @@ onMounted(() => {
 
 function setActiveTab(tab: 'favorite' | 'rating') {
   if (tab === 'favorite') {
-    clickFavoriteFiles();
+    void clickFavoriteFiles();
     return;
   }
 
@@ -209,6 +214,7 @@ interface FavoriteFolder {
   album_id: number;
   path: string;
   name?: string;
+  is_excluded_from_search?: boolean;
 }
 const favorite_folders = ref<FavoriteFolder[]>([]);
 const favoriteFolderMenuItems = computed(() => {
@@ -222,18 +228,22 @@ const favoriteFolderMenuItems = computed(() => {
     },
   ];
 });
-onMounted(() => {
+onMounted(async () => {
   if (favorite_folders.value.length === 0) {
-    getFavoriteFolders().then((folders) => {
-      favorite_folders.value = folders || [];
-      favorite_folders.value.forEach((folder) => {
-        folder.name = getFolderName(folder.path);
-      });
-    });
+    await loadFavoriteFolders();
   }
 });
+
+async function loadFavoriteFolders() {
+  const folders = await getFavoriteFolders();
+  favorite_folders.value = folders || [];
+  favorite_folders.value.forEach((folder) => {
+    folder.name = getFolderName(folder.path);
+  });
+}
 // click favorite files
-function clickFavoriteFiles() {
+async function clickFavoriteFiles() {
+  await loadFavoriteFolders();
   (libConfig.favorite as any).tab = 'favorite';
   libConfig.favorite.albumId = null;
   libConfig.favorite.folderId = 0;

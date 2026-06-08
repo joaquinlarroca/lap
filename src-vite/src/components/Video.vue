@@ -15,10 +15,10 @@
 
     <div v-if="!hasError && !isPlaying && !isLoading" class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
       <div
-        class="w-16 h-16 rounded-full bg-base-100/50 flex items-center justify-center hover:bg-base-100 hover:scale-110 transition-all duration-300 ease-out group pointer-events-auto cursor-pointer"
+        class="w-16 h-16 rounded-full bg-base-100/70 flex items-center justify-center hover:scale-110 transition-all duration-300 ease-out group pointer-events-auto cursor-pointer"
         @click.stop="clickPlayVideo"
       >
-        <component :is="isReplaying ? IconVideoReplay : IconVideoPlay" class="w-8 h-8 text-base-content/50 transition-colors duration-300 group-hover:text-base-content/70" />
+        <component :is="isReplaying ? IconVideoReplay : IconVideoPlay" class="w-8 h-8" />
       </div>
     </div>
 

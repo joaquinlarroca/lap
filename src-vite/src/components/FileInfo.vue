@@ -60,10 +60,10 @@
                 </button>
               </div>
               <span
-                v-if="previewFormatLabel"
+                v-if="previewTagLabel"
                 class="inline-flex shrink-0 items-center rounded-box border border-base-content/20 bg-base-300/80 px-1.5 text-[10px] font-bold uppercase tracking-wide text-base-content/80"
               >
-                {{ previewFormatLabel }}
+                {{ previewTagLabel }}
               </span>
             </div>
 
@@ -100,7 +100,7 @@
                 <video
                   v-if="showVideoPreview"
                   ref="previewVideoRef"
-                  class="pointer-events-none absolute inset-0 h-full w-full object-contain bg-black transition-opacity duration-100"
+                  class="pointer-events-none absolute inset-0 h-full w-full object-contain"
                   :class="isVideoPreviewReady ? 'opacity-100' : 'opacity-0'"
                   :style="previewImageStyle"
                   :poster="fileInfo?.thumbnail"
@@ -123,10 +123,10 @@
               <button
                 v-if="isVideoFile && !showVideoPreview"
                 type="button"
-                class="absolute inset-0 z-10 flex items-center justify-center bg-black/10 text-base-content/70 opacity-0 pointer-events-none transition-all duration-150 group-hover/thumbnail:opacity-100 group-hover/thumbnail:pointer-events-auto hover:bg-black/20"
+                class="absolute inset-0 z-10 flex items-center justify-center text-base-content/70 cursor-pointer"
                 @click.stop="playPreviewVideo"
               >
-                <span class="flex h-12 w-12 items-center justify-center rounded-full bg-base-100/70 shadow-sm transition-transform hover:scale-105">
+                <span class="flex h-12 w-12 items-center justify-center rounded-full bg-base-100/70 shadow-sm transition-transform hover:scale-110">
                   <IconVideoPlay class="h-7 w-7" />
                 </span>
               </button>
@@ -534,6 +534,22 @@ const isVideoFile = computed(() => Number(props.fileInfo?.file_type || 0) === 2)
 const canShowHistogram = computed(() => !isVideoFile.value);
 const activePreviewMode = computed(() => canShowHistogram.value ? config.infoPanel.previewMode : 'thumbnail');
 const isHistogramPreview = computed(() => activePreviewMode.value === 'histogram');
+const histogramChannelLabel = computed(() => {
+  const storedMask = Number(config.infoPanel.histogramChannels);
+  const mask = storedMask === 16 || !Number.isInteger(storedMask) || storedMask < 0 || storedMask > 15
+    ? 15
+    : storedMask;
+  const labels = [
+    { bit: 1, label: 'L' },
+    { bit: 2, label: 'R' },
+    { bit: 4, label: 'G' },
+    { bit: 8, label: 'B' },
+  ];
+  return labels
+    .filter((item) => Boolean(mask & item.bit))
+    .map((item) => item.label)
+    .join('');
+});
 const previewVideoRef = ref<HTMLVideoElement | null>(null);
 const showVideoPreview = ref(false);
 const isVideoPreviewReady = ref(false);
@@ -562,6 +578,9 @@ const previewFormatLabel = computed(() => {
   if (Number(props.fileInfo?.file_type || 0) === 3) return 'RAW';
   return extension.toUpperCase();
 });
+const previewTagLabel = computed(() => (
+  isHistogramPreview.value ? histogramChannelLabel.value : previewFormatLabel.value
+));
 function togglePreview() {
   config.infoPanel.showPreview = !config.infoPanel.showPreview;
 }

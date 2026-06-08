@@ -711,13 +711,24 @@ impl AFolder {
     // get all favorite folders
     pub fn get_favorite_folders() -> Result<Vec<Self>, String> {
         let conn = open_conn()?;
+        let sep = std::path::MAIN_SEPARATOR.to_string().replace('\'', "''");
 
-        let query =
-            "SELECT a.id, a.album_id, a.name, a.path, a.created_at, a.modified_at, a.is_favorite, COALESCE(a.is_excluded_from_search, 0)
+        let query = format!(
+            "SELECT a.id, a.album_id, a.name, a.path, a.created_at, a.modified_at, a.is_favorite,
+                EXISTS (
+                    SELECT 1 FROM afolders xf
+                    WHERE COALESCE(xf.is_excluded_from_search, 0) = 1
+                    AND xf.album_id = a.album_id
+                    AND (
+                        a.path = xf.path
+                        OR instr(a.path, xf.path || '{}') = 1
+                    )
+                )
             FROM afolders a
             WHERE a.is_favorite = 1
-            ORDER BY a.name"
-                .to_string();
+            ORDER BY a.name",
+            sep
+        );
 
         let mut stmt = conn.prepare(query.as_str()).map_err(|e| e.to_string())?;
 

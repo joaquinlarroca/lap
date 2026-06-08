@@ -86,7 +86,10 @@
                   :class="shouldAnimateAlbumIcon(album) ? 'animate-spin' : ''" 
                 />
               </div>
-              <span v-if="props.showTotalCount !== false && album.total">
+              <span
+                v-if="props.showTotalCount !== false && album.total"
+                :class="selection.albumId.value === album.id && selection.selected.value ? 'hidden' : 'group-hover:hidden'"
+              >
                 {{ album.total.toLocaleString() }}
               </span>
             </div>  
@@ -461,6 +464,7 @@ onMounted( async () => {
 
   unlistenAlbumsRefreshed = await listen('albums-refreshed', async (event: any) => {
     const refreshedAlbums = Array.isArray(event.payload?.albums) ? event.payload.albums : [];
+    const refreshFolders = event.payload?.refreshFolders !== false;
     for (const updatedAlbum of refreshedAlbums) {
       const albumId = Number(updatedAlbum?.id || 0);
       if (albumId <= 0) continue;
@@ -474,7 +478,7 @@ onMounted( async () => {
       if (updatedAlbum.cover_file_id !== undefined) {
         album.cover_file_id = updatedAlbum.cover_file_id;
       }
-      if (album.is_expanded) {
+      if (refreshFolders && album.is_expanded) {
         await expandAlbum(album, true);
       }
     }

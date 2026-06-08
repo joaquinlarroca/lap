@@ -788,7 +788,7 @@ const toggleFolderSearchExcluded = async (folder: Folder) => {
     folder.is_excluded_from_search = nextValue;
     const album = await recountAlbum(props.albumId);
     if (album) {
-      tauriEmit('albums-refreshed', { albums: [album] });
+      tauriEmit('albums-refreshed', { albums: [album], refreshFolders: false });
     }
     tauriEmit('library-total-refreshed');
   }
