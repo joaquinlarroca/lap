@@ -732,7 +732,7 @@ pub fn copy_file(
     .finalize()
 }
 
-/// import a file into a folder with auto-generated name (IMG_YYYYMMDD_HHMMSS.ext)
+/// import a file into a folder preserving the original file name
 #[tauri::command]
 pub fn import_file(file_path: &str, folder_id: i64, folder_path: &str) -> Result<Option<AFile>, String> {
     // Validate the source is a supported type *before* copying.
@@ -753,7 +753,7 @@ pub fn import_file(file_path: &str, folder_id: i64, folder_path: &str) -> Result
     Ok(Some(file))
 }
 
-/// import an image from a URL into a folder with auto-generated name
+/// import an image from a URL into a folder preserving the original file name when possible
 #[tauri::command]
 pub async fn import_url(url: &str, folder_id: i64, folder_path: String) -> Result<Option<AFile>, String> {
     import_url_inner(url, folder_id, folder_path).await
@@ -790,13 +790,24 @@ async fn import_url_inner(url: &str, folder_id: i64, folder_path: String) -> Res
             .ok_or_else(|| format!("Unsupported image format: {}", m))?;
         m
     };
+    let original_name = response
+        .headers()
+        .get("content-disposition")
+        .and_then(|value| value.to_str().ok())
+        .and_then(filename_from_content_disposition)
+        .or_else(|| filename_from_url(response.url().as_str()))
+        .or_else(|| filename_from_url(url));
 
     let bytes = response.bytes().await
         .map_err(|e| format!("Failed to read response: {}", e))?;
 
     let dest_folder = folder_path.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let new_path = t_utils::save_bytes_to_folder(&bytes, &mime, &dest_folder)
+        let new_path = original_name
+            .and_then(|name| {
+                t_utils::save_downloaded_bytes_with_name(&bytes, &mime, &name, &dest_folder)
+            })
+            .or_else(|| t_utils::save_bytes_to_folder(&bytes, &mime, &dest_folder))
             .ok_or_else(|| "Failed to save downloaded image".to_string())?;
         let file_type = t_utils::get_file_type(&new_path)
             .ok_or_else(|| format!("Unsupported file type: {}", new_path))?;
@@ -804,6 +815,69 @@ async fn import_url_inner(url: &str, folder_id: i64, folder_path: String) -> Res
         let (file, _) = AFile::add_to_db(folder_id, &new_path, file_type, now)?;
         Ok(Some(file))
     }).await.map_err(|e| format!("Failed to save file: {}", e))?
+}
+
+fn filename_from_content_disposition(value: &str) -> Option<String> {
+    for part in value.split(';') {
+        if let Some((key, raw_value)) = part.trim().split_once('=') {
+            if key.trim().eq_ignore_ascii_case("filename*") {
+                let raw_value = raw_value.trim().trim_matches('"');
+                let encoded = raw_value.split_once("''").map_or(raw_value, |(_, value)| value);
+                return clean_import_filename(&percent_decode_utf8(encoded));
+            }
+        }
+    }
+
+    for part in value.split(';') {
+        if let Some((key, raw_value)) = part.trim().split_once('=') {
+            if key.trim().eq_ignore_ascii_case("filename") {
+                return clean_import_filename(raw_value.trim().trim_matches('"'));
+            }
+        }
+    }
+
+    None
+}
+
+fn filename_from_url(url: &str) -> Option<String> {
+    let without_query = url.split('?').next().unwrap_or(url);
+    let without_fragment = without_query.split('#').next().unwrap_or(without_query);
+    let last_segment = without_fragment.trim_end_matches('/').rsplit('/').next()?;
+    clean_import_filename(&percent_decode_utf8(last_segment))
+}
+
+fn clean_import_filename(name: &str) -> Option<String> {
+    let normalized = name.replace('\\', "/");
+    let filename = Path::new(&normalized)
+        .file_name()
+        .and_then(|item| item.to_str())?
+        .trim();
+    if filename.is_empty() || filename.contains('\0') {
+        None
+    } else {
+        Some(filename.to_string())
+    }
+}
+
+fn percent_decode_utf8(value: &str) -> String {
+    let bytes = value.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+
+    while index < bytes.len() {
+        if bytes[index] == b'%' && index + 2 < bytes.len() {
+            if let Ok(hex) = u8::from_str_radix(&value[index + 1..index + 3], 16) {
+                decoded.push(hex);
+                index += 3;
+                continue;
+            }
+        }
+
+        decoded.push(bytes[index]);
+        index += 1;
+    }
+
+    String::from_utf8(decoded).unwrap_or_else(|_| value.to_string())
 }
 
 

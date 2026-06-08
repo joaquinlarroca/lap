@@ -1138,20 +1138,12 @@ pub fn copy_file_with_policy(
     Ok(TransferResult::new(&destination, backup))
 }
 
-/// Import a file into a destination folder with auto-generated name.
-/// Naming uses IMG_YYYYMMDD_HHMMSS.ext with the current time.
+/// Import a file into a destination folder preserving the original file name.
+/// If the target already exists, append a numeric suffix like `(1)`.
 pub fn import_file(source_path: &str, dest_folder: &str) -> Option<String> {
     let source = Path::new(source_path);
-    let ext = source
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("jpg")
-        .to_ascii_lowercase();
-
-    let now = chrono::Local::now();
-    let name = format!("IMG_{}.{}", now.format("%Y%m%d_%H%M%S"), ext);
     let mut destination = PathBuf::from(dest_folder);
-    destination.push(&name);
+    destination.push(source.file_name()?);
     let destination = get_unique_path(destination);
 
     match fs::copy(source, &destination) {
@@ -1200,17 +1192,15 @@ fn validate_image_bytes(ext: &str, bytes: &[u8]) -> bool {
     }
 }
 
-/// Save bytes to a folder preserving the original file extension.
-/// Unlike `save_bytes_to_folder`, this does NOT map MIME types — it
-/// keeps whatever extension the original file had.  This supports
-/// RAW, video, TIFF, HEIC, JXL, etc. in addition to images.
+/// Save bytes to a folder preserving the original file name.
+/// If the target already exists, append a numeric suffix like `(1)`.
 pub fn save_bytes_with_name(bytes: &[u8], name: &str, dest_folder: &str) -> Option<String> {
-    let ext = name.rsplit('.').next().unwrap_or("jpg").to_ascii_lowercase();
-    let ext = if ext == "jpeg" { "jpg" } else { ext.as_str() };
-    let now = chrono::Local::now();
-    let filename = format!("IMG_{}.{}", now.format("%Y%m%d_%H%M%S"), ext);
+    let filename = Path::new(name)
+        .file_name()
+        .and_then(|item| item.to_str())
+        .filter(|item| !item.trim().is_empty())?;
     let mut destination = PathBuf::from(dest_folder);
-    destination.push(&filename);
+    destination.push(filename);
     let destination = get_unique_path(destination);
 
     let mut file = fs::File::create(&destination)
@@ -1218,6 +1208,52 @@ pub fn save_bytes_with_name(bytes: &[u8], name: &str, dest_folder: &str) -> Opti
     std::io::Write::write_all(&mut file, bytes)
         .map_err(|e| eprintln!("Failed to write file: {}", e)).ok()?;
     println!("File saved with name: {}", destination.display());
+    destination.to_str().map(|s| s.to_string())
+}
+
+/// Save downloaded bytes to a folder preserving the original file name when possible.
+/// MIME and magic-byte validation are performed before writing.
+pub fn save_downloaded_bytes_with_name(
+    bytes: &[u8],
+    content_type: &str,
+    name: &str,
+    dest_folder: &str,
+) -> Option<String> {
+    let ext = image_mime_to_ext(content_type)?;
+    if !validate_image_bytes(ext, bytes) {
+        eprintln!("Downloaded bytes do not match expected format for .{}", ext);
+        return None;
+    }
+
+    let filename = Path::new(name)
+        .file_name()
+        .and_then(|item| item.to_str())
+        .filter(|item| !item.trim().is_empty())?;
+    let filename_path = Path::new(filename);
+    let filename = match filename_path.extension().and_then(|item| item.to_str()) {
+        Some(file_ext) if !file_ext.trim().is_empty() && get_file_type(filename).is_some() => {
+            filename.to_string()
+        }
+        Some(_) => {
+            let stem = filename_path
+                .file_stem()
+                .and_then(|item| item.to_str())
+                .filter(|item| !item.trim().is_empty())
+                .unwrap_or("image");
+            format!("{}.{}", stem, ext)
+        }
+        _ => format!("{}.{}", filename, ext),
+    };
+
+    let mut destination = PathBuf::from(dest_folder);
+    destination.push(filename);
+    let destination = get_unique_path(destination);
+
+    let mut file = fs::File::create(&destination)
+        .map_err(|e| eprintln!("Failed to create file: {}", e)).ok()?;
+    std::io::Write::write_all(&mut file, bytes)
+        .map_err(|e| eprintln!("Failed to write file: {}", e)).ok()?;
+    println!("File saved from URL: {}", destination.display());
     destination.to_str().map(|s| s.to_string())
 }
 
