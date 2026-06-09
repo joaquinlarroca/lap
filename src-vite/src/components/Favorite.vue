@@ -47,24 +47,30 @@
                 folder.is_excluded_from_search ? 'text-base-content/30' : '',
               ]"
               @click="clickFavoriteFolder(folder)"
+              @contextmenu.prevent.stop="(e: MouseEvent) => handleFavoriteFolderContextMenu(folder, e)"
             >
               <IconFolderFavorite class="mx-1 h-5 shrink-0" />
               <div class="sidebar-item-label">
                 {{ folder.name }}
               </div>
+              <span v-if="folder.count" :class="['sidebar-item-count', libConfig.favorite.folderId === folder.id ? 'hidden' : 'group-hover:hidden']">{{ folder.count.toLocaleString() }}</span>
               <IconHide
                 v-if="folder.is_excluded_from_search"
                 class="ml-1 mr-1 w-4 h-4 shrink-0 text-base-content/30"
               />
-              <ContextMenu
+              <div
                 :class="[
                   'ml-auto flex flex-row items-center text-base-content/30',
-                  libConfig.favorite.folderId != folder.id ? 'invisible group-hover:visible' : ''
+                  libConfig.favorite.folderId === folder.id ? '' : 'hidden group-hover:flex'
                 ]"
-                :iconMenu="IconMore"
-                :menuItems="favoriteFolderMenuItems"
-                :smallIcon="true"
-              />
+              >
+                <ContextMenu
+                  :ref="(el: any) => { if (el) favoriteFolderContextMenus[folder.id] = el }"
+                  :iconMenu="IconMore"
+                  :menuItems="favoriteFolderMenuItems"
+                  :smallIcon="true"
+                />
+              </div>
             </div>
           </li>
         </ul>
@@ -215,8 +221,15 @@ interface FavoriteFolder {
   path: string;
   name?: string;
   is_excluded_from_search?: boolean;
+  count?: number;
 }
 const favorite_folders = ref<FavoriteFolder[]>([]);
+const favoriteFolderContextMenus = ref<Record<number, any>>({});
+
+function handleFavoriteFolderContextMenu(folder: FavoriteFolder, event: MouseEvent) {
+  clickFavoriteFolder(folder);
+  favoriteFolderContextMenus.value[folder.id]?.open?.(event.clientX, event.clientY);
+}
 const favoriteFolderMenuItems = computed(() => {
   return [
     {
@@ -236,9 +249,10 @@ onMounted(async () => {
 
 async function loadFavoriteFolders() {
   const folders = await getFavoriteFolders();
-  favorite_folders.value = folders || [];
-  favorite_folders.value.forEach((folder) => {
+  favorite_folders.value = (folders || []).map((folder) => {
     folder.name = getFolderName(folder.path);
+    folder.count = folder.file_count || 0;
+    return folder;
   });
 }
 // click favorite files

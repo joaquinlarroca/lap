@@ -65,6 +65,7 @@
               selectedPerson && selectedPerson.id === person.id && !isRenamingPerson ? 'sidebar-item-selected' : 'sidebar-item-hover',
             ]"
             @click="selectPerson(person)"
+            @contextmenu.prevent.stop="(e: MouseEvent) => handlePersonContextMenu(person, e)"
           >
             <!-- Face thumbnail -->
             <div class="w-10 h-10 rounded-box overflow-hidden bg-base-300 shrink-0 flex items-center justify-center">
@@ -91,16 +92,17 @@
               <span class="sidebar-item-label">
                 {{ person.name || `Person ${person.id}` }}
               </span>
-              <span v-if="person.count" class="sidebar-item-count">
+              <span v-if="person.count" :class="['sidebar-item-count', selectedPerson?.id === person.id ? 'hidden' : 'group-hover:hidden']">
                 {{ person.count.toLocaleString() }}
               </span>
-              
+
               <div :class="[
                   'ml-auto flex flex-row items-center text-base-content/30',
-                  selectedPerson && selectedPerson.id === person.id ? '' : 'hidden group-hover:block'
+                  selectedPerson?.id === person.id ? '' : 'hidden group-hover:flex'
                 ]"
               >
-                <ContextMenu 
+                <ContextMenu
+                  :ref="(el: any) => { if (el) personContextMenus[person.id] = el }"
                   :iconMenu="IconMore"
                   :menuItems="getMoreMenuItems()"
                   :smallIcon="true"
@@ -225,6 +227,12 @@ const clusterProgress = ref({
   total: 0
 });
 const incompleteCount = ref(0);
+const personContextMenus = ref<Record<number, any>>({});
+
+function handlePersonContextMenu(person: any, event: MouseEvent) {
+  selectPerson(person);
+  personContextMenus.value[person.id]?.open?.(event.clientX, event.clientY);
+}
 const betaBadgeRef = ref<HTMLElement | null>(null);
 const betaTooltipRef = ref<HTMLElement | null>(null);
 const isBetaTooltipVisible = ref(false);

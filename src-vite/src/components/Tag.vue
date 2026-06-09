@@ -79,6 +79,7 @@
               selectedTag && selectedTag.id === tag.id && !isRenamingTag ? 'sidebar-item-selected' : 'sidebar-item-hover',
             ]"
             @click="selectTag(tag)"
+            @contextmenu.prevent.stop="(e: MouseEvent) => handleTagContextMenu(tag, e)"
           >
             <IconTag class="mx-1 h-5 shrink-0" />
             <input v-if="selectedTag && selectedTag.id === tag.id && isRenamingTag"
@@ -92,15 +93,13 @@
               @blur="handleRenameTag"
             />
             <span v-else class="sidebar-item-label">{{ tag.name }}</span>
-            <span v-if="!isRenamingTag && tag.count" class="sidebar-item-count">{{ tag.count.toLocaleString() }}</span>
+            <span v-if="!isRenamingTag && tag.count" :class="['sidebar-item-count', selectedTag?.id === tag.id ? 'hidden' : 'group-hover:hidden']">{{ tag.count.toLocaleString() }}</span>
             <div
               v-if="!isRenamingTag"
-              :class="[
-                'ml-auto flex flex-row items-center text-base-content/30',
-                selectedTag && selectedTag.id === tag.id ? '' : 'hidden'
-              ]"
+              :class="['ml-auto flex flex-row items-center text-base-content/30', selectedTag?.id === tag.id ? '' : 'hidden group-hover:flex']"
             >
               <ContextMenu
+                :ref="(el: any) => { if (el) tagContextMenus[tag.id] = el }"
                 :iconMenu="IconMore"
                 :menuItems="getMoreMenuItems()"
                 :smallIcon="true"
@@ -218,6 +217,12 @@ const smartTagItems = computed(() => {
 // message boxes
 const showDeleteTagMsgbox = ref(false);
 const showNewTagMsgbox = ref(false);
+const tagContextMenus = ref<Record<number, any>>({});
+
+function handleTagContextMenu(tag: any, event: MouseEvent) {
+  selectTag(tag);
+  tagContextMenus.value[tag.id]?.open?.(event.clientX, event.clientY);
+}
 
 // more menuitems
 const getMoreMenuItems = () => [

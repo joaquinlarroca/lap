@@ -98,6 +98,51 @@ export const useFileMenuItems = (
       },
       { label: "-", action: null },
       {
+        label: localeMsg.value.menu.file.rename,
+        icon: markRaw(IconRename),
+        shortcut: shortcut('file.rename'),
+        action: createAction('rename')
+      },
+      {
+        label: translate('menu.file.move_within_library'),
+        icon: markRaw(IconMove),
+        shortcut: shortcut('file.moveTo'),
+        action: createAction('move-within-library')
+      },
+      {
+        label: translate('menu.file.move_to'),
+        shortcut: shortcut('file.moveToFolder'),
+        action: createAction('move-to-folder')
+      },
+      {
+        label: translate('menu.file.copy_to'),
+        action: createAction('copy-to-folder')
+      },
+      {
+        label: localeMsg.value.menu.file.copy,
+        icon: markRaw(IconCopy),
+        shortcut: shortcut('file.copy'),
+        disabled: !isImage,
+        action: createAction('copy')
+      },
+      {
+        label: isMac ? localeMsg.value.menu.file.reveal_in_finder : localeMsg.value.menu.file.reveal_in_file_explorer,
+        shortcut: shortcut('file.reveal'),
+        action: createAction('reveal')
+      },
+      {
+        label: localeMsg.value.menu.file.refresh_file_info,
+        icon: markRaw(IconRefresh),
+        action: createAction('refresh-file-info')
+      },
+      {
+        label: localeMsg.value.menu.file.move_to_trash,
+        icon: markRaw(IconTrash),
+        shortcut: shortcut('file.trash'),
+        action: createAction('trash')
+      },
+      { label: "-", action: null },
+      {
         label: f.is_favorite ? localeMsg.value.menu.meta.unfavorite : localeMsg.value.menu.meta.favorite,
         icon: markRaw(IconHeart),
         shortcut: shortcut('meta.favorite'),
@@ -164,51 +209,6 @@ export const useFileMenuItems = (
         icon: markRaw(IconRotate),
         shortcut: shortcut('meta.rotate'),
         action: createAction('rotate')
-      },
-      { label: "-", action: null },
-      {
-        label: localeMsg.value.menu.file.rename,
-        icon: markRaw(IconRename),
-        shortcut: shortcut('file.rename'),
-        action: createAction('rename')
-      },
-      {
-        label: translate('menu.file.move_within_library'),
-        icon: markRaw(IconMove),
-        shortcut: shortcut('file.moveTo'),
-        action: createAction('move-within-library')
-      },
-      {
-        label: translate('menu.file.move_to'),
-        shortcut: shortcut('file.moveToFolder'),
-        action: createAction('move-to-folder')
-      },
-      {
-        label: translate('menu.file.copy_to'),
-        action: createAction('copy-to-folder')
-      },
-      {
-        label: localeMsg.value.menu.file.copy,
-        icon: markRaw(IconCopy),
-        shortcut: shortcut('file.copy'),
-        disabled: !isImage,
-        action: createAction('copy')
-      },
-      {
-        label: isMac ? localeMsg.value.menu.file.reveal_in_finder : localeMsg.value.menu.file.reveal_in_file_explorer,
-        shortcut: shortcut('file.reveal'),
-        action: createAction('reveal')
-      },
-      {
-        label: localeMsg.value.menu.file.refresh_file_info,
-        icon: markRaw(IconRefresh),
-        action: createAction('refresh-file-info')
-      },
-      {
-        label: localeMsg.value.menu.file.move_to_trash,
-        icon: markRaw(IconTrash),
-        shortcut: shortcut('file.trash'),
-        action: createAction('trash')
       },
       { label: "-", action: null },
       {

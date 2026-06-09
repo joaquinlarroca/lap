@@ -21,6 +21,7 @@
         ]"
         @click="clickFolder(albumId, child)"
         @dblclick="expandFolder(child)"
+        @contextmenu.prevent.stop="(e: MouseEvent) => handleFolderContextMenu(child, e)"
         @dragover="onFolderDragOver"
         @dragenter="onFolderDragEnter($event, child.path)"
         @dragleave="onFolderDragLeave"
@@ -65,6 +66,7 @@
               :buttonSize="'small'"
             />
             <ContextMenu v-if="allowContextMenu && !isRenamingFolder"
+              :ref="(el: any) => { if (el) folderContextMenus[child.path] = el }"
               :class="[
                 selection.folderPath.value != child.path ? 'invisible group-hover:visible' : ''
               ]"
@@ -243,6 +245,12 @@ const showMoveTo = ref(false);
 const permanentDeleteChecked = ref(false);
 const deletePermanently = ref(false);
 const dropHighlightPath = ref('');
+const folderContextMenus = ref<Record<string, any>>({});
+
+function handleFolderContextMenu(folder: Folder, event: MouseEvent) {
+  clickFolder(props.albumId, folder);
+  folderContextMenus.value[folder.path]?.open?.(event.clientX, event.clientY);
+}
 type FileConflictPolicy = 'skip' | 'keep_both' | 'replace';
 const fileConflictDialog = ref({
   show: false,
@@ -259,26 +267,6 @@ const treeRootRef = ref<HTMLElement | null>(null);
 const getMenuItemsForFolder = (folder: any) => {
   const isRoot = folder.path === props.rootPath;
   return [
-    {
-      label: !folder?.is_favorite ? localeMsg.value.menu.meta.favorite : localeMsg.value.menu.meta.unfavorite,
-      icon: !folder?.is_favorite ? IconHeart : IconHeart,
-      // disabled: isRoot,
-      action: () => {
-        toggleFavorite();
-      }
-    },
-    {
-      label: folder?.is_excluded_from_search ? localeMsg.value.menu.album.include_in_search : localeMsg.value.menu.album.exclude_from_search,
-      icon: folder?.is_excluded_from_search ? IconUnhide : IconHide,
-      // disabled: isRoot,
-      action: () => {
-        toggleFolderSearchExcluded(folder);
-      }
-    },
-    {
-      label: "-",
-      action: null
-    },
     {
       label: localeMsg.value.menu.file.new_folder,
       icon: IconNewFolder,
@@ -344,6 +332,26 @@ const getMenuItemsForFolder = (folder: any) => {
       action: () => {
         deletePermanently.value = permanentDeleteChecked.value;
         showTrashFolderMsgbox.value = true;
+      }
+    },
+    {
+      label: "-",
+      action: null
+    },
+    {
+      label: !folder?.is_favorite ? localeMsg.value.menu.meta.favorite : localeMsg.value.menu.meta.unfavorite,
+      icon: !folder?.is_favorite ? IconHeart : IconHeart,
+      // disabled: isRoot,
+      action: () => {
+        toggleFavorite();
+      }
+    },
+    {
+      label: folder?.is_excluded_from_search ? localeMsg.value.menu.album.include_in_search : localeMsg.value.menu.album.exclude_from_search,
+      icon: folder?.is_excluded_from_search ? IconUnhide : IconHide,
+      // disabled: isRoot,
+      action: () => {
+        toggleFolderSearchExcluded(folder);
       }
     },
   ];

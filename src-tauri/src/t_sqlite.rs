@@ -393,6 +393,7 @@ pub struct AFolder {
     // extra info
     pub is_favorite: Option<bool>,             // is favorite
     pub is_excluded_from_search: Option<bool>, // exclude folder and children from search
+    pub file_count: Option<i64>,               // file count (populated by get_favorite_folders)
 }
 
 impl AFolder {
@@ -408,6 +409,7 @@ impl AFolder {
             modified_at: Some(0), // force first sync
             is_favorite: None,
             is_excluded_from_search: Some(false),
+            file_count: None,
         })
     }
 
@@ -422,6 +424,7 @@ impl AFolder {
             modified_at: row.get(5)?,
             is_favorite: row.get(6)?,
             is_excluded_from_search: row.get(7)?,
+            file_count: None,
         })
     }
 
@@ -723,7 +726,8 @@ impl AFolder {
                         a.path = xf.path
                         OR instr(a.path, xf.path || '{}') = 1
                     )
-                )
+                ),
+                (SELECT COUNT(*) FROM afiles WHERE folder_id = a.id)
             FROM afolders a
             WHERE a.is_favorite = 1
             ORDER BY a.name",
@@ -733,7 +737,19 @@ impl AFolder {
         let mut stmt = conn.prepare(query.as_str()).map_err(|e| e.to_string())?;
 
         let rows = stmt
-            .query_map(params![], Self::from_row)
+            .query_map(params![], |row| {
+                Ok(Self {
+                    id: Some(row.get(0)?),
+                    album_id: row.get(1)?,
+                    name: row.get(2)?,
+                    path: row.get(3)?,
+                    created_at: row.get(4)?,
+                    modified_at: row.get(5)?,
+                    is_favorite: row.get(6)?,
+                    is_excluded_from_search: row.get(7)?,
+                    file_count: row.get(8)?,
+                })
+            })
             .map_err(|e| e.to_string())?;
 
         let mut folders = Vec::new();

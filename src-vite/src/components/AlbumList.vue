@@ -41,6 +41,7 @@
             ]"
             @click.stop="clickAlbum(album)"
             @dblclick.stop="dlbClickAlbum(album)"
+            @contextmenu.prevent.stop="(e: MouseEvent) => handleAlbumContextMenu(album, e)"
           >
             <IconRight
               class="p-1 w-6 h-6 shrink-0 transition-transform hover:text-base-content"
@@ -92,6 +93,7 @@
                 ]"
               >
                 <ContextMenu
+                  :ref="(el: any) => { if (el) albumContextMenus[album.id] = el }"
                   :iconMenu="IconMore"
                   :menuItems="() => getMoreMenuItems(album)"
                   :smallIcon="true"
@@ -236,6 +238,12 @@ const newAlbumFolderPath = ref('');
 const editingAlbumId = ref(0);
 const isLoading = ref(true);    // loading albums
 const isDragging = ref(false);  // dragging albums
+const albumContextMenus = ref<Record<number, any>>({});
+
+function handleAlbumContextMenu(album: Album, event: MouseEvent) {
+  clickAlbum(album);
+  albumContextMenus.value[album.id]?.open?.(event.clientX, event.clientY);
+}
 
 const getAlbumById = (id: number) => albums.value.find(album => album.id === id);
 const selectedAlbum = computed(() => getAlbumById(selection.albumId.value)) || {};
