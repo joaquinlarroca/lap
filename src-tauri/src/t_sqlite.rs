@@ -23,6 +23,7 @@ use std::io::Cursor;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::process;
+use std::ops::{Deref, DerefMut};
 use std::sync::{Condvar, Mutex, OnceLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{Emitter, State};
@@ -431,17 +432,19 @@ impl AFolder {
     /// fetch a folder row from db (by path)
     pub fn fetch(folder_path: &str) -> Result<Option<Self>, String> {
         let conn = open_conn()?;
-        let result = conn
-            .query_row(
-                "SELECT id, album_id, name, path, created_at, modified_at, is_favorite, COALESCE(is_excluded_from_search, 0)
-                FROM afolders
-                WHERE path = ?1",
-                params![folder_path],
-                Self::from_row,
-            )
-            .optional()
-            .map_err(|e| e.to_string())?;
-        Ok(result)
+        Self::fetch_with_conn(&conn, folder_path)
+    }
+
+    pub fn fetch_with_conn(conn: &Connection, folder_path: &str) -> Result<Option<Self>, String> {
+        conn.query_row(
+            "SELECT id, album_id, name, path, created_at, modified_at, is_favorite, COALESCE(is_excluded_from_search, 0)
+            FROM afolders
+            WHERE path = ?1",
+            params![folder_path],
+            Self::from_row,
+        )
+        .optional()
+        .map_err(|e| e.to_string())
     }
 
     /// fetch a folder row from db (by id)
@@ -480,41 +483,31 @@ impl AFolder {
         Ok(folders)
     }
 
-    /// insert a folder into db
-    fn insert(&self) -> Result<usize, String> {
-        let conn = open_conn()?;
-        let result = conn
-            .execute(
-                "INSERT INTO afolders (album_id, name, path, created_at, modified_at, is_favorite, is_excluded_from_search) 
-                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params![
-                    self.album_id,
-                    self.name,
-                    self.path,
-                    self.created_at,
-                    self.modified_at,
-                    self.is_favorite,
-                    self.is_excluded_from_search
-                ],
-            )
-            .map_err(|e| e.to_string())?;
-        Ok(result)
+    fn insert_with_conn(&self, conn: &Connection) -> Result<usize, String> {
+        conn.execute(
+            "INSERT INTO afolders (album_id, name, path, created_at, modified_at, is_favorite, is_excluded_from_search)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                self.album_id, self.name, self.path,
+                self.created_at, self.modified_at,
+                self.is_favorite, self.is_excluded_from_search
+            ],
+        )
+        .map_err(|e| e.to_string())
     }
 
     /// insert the folder to db if not exists
     pub fn add_to_db(album_id: i64, folder_path: &str) -> Result<Self, String> {
-        // Check if the path already exists
-        let existing_folder = Self::fetch(folder_path);
-        if let Ok(Some(folder)) = existing_folder {
+        let conn = open_conn()?;
+        Self::add_to_db_with_conn(&conn, album_id, folder_path)
+    }
+
+    pub fn add_to_db_with_conn(conn: &Connection, album_id: i64, folder_path: &str) -> Result<Self, String> {
+        if let Ok(Some(folder)) = Self::fetch_with_conn(conn, folder_path) {
             return Ok(folder);
         }
-
-        // insert the new folder into the database
-        // when insert a new folder, save album_id value
-        Self::new(album_id, folder_path)?.insert()?;
-
-        // return the newly inserted folder
-        let new_folder = Self::fetch(folder_path)?;
+        Self::new(album_id, folder_path)?.insert_with_conn(conn)?;
+        let new_folder = Self::fetch_with_conn(conn, folder_path)?;
         Ok(new_folder.unwrap())
     }
 
@@ -920,6 +913,16 @@ impl AFile {
         let mut gps_longitude: Option<f64> = None;
         let mut gps_altitude: Option<f64> = None;
 
+        // Pre-read file header once for images (saves 3-4 redundant File::open per file).
+        let file_header: Option<Vec<u8>> = if file_type == 1 || file_type == 3 {
+            std::fs::File::open(file_path).ok().and_then(|mut f| {
+                use std::io::Read;
+                let mut buf = vec![0u8; 128 * 1024];
+                f.read(&mut buf).ok().map(|n| { buf.truncate(n); buf })
+            })
+        } else { None };
+        let file_header_deref = file_header.as_deref();
+
         match file_type {
             1 => {
                 let (w, h) = t_image::get_image_dimensions(file_path)?;
@@ -947,12 +950,20 @@ impl AFile {
             _ => {}
         };
 
-        let format_label = t_utils::detect_file_format_label(file_path, file_type);
+        let format_label = if let Some(hdr) = file_header_deref {
+            if file_type == 3 { Some("RAW".to_string()) }
+            else { t_utils::detect_label_from_header(hdr, file_type) }
+        } else {
+            t_utils::detect_file_format_label(file_path, file_type)
+        };
 
         if file_type == 1 || file_type == 3 {
-            // Image file
-            // Read EXIF data using permissive reader
-            let exif = t_image::read_exif_permissive(file_path);
+            // Image file — reuse pre-read header
+            let exif = if let Some(hdr) = file_header_deref {
+                t_image::read_exif_from_bytes_permissive(hdr)
+            } else {
+                t_image::read_exif_permissive(file_path)
+            };
 
             // Extracts EXIF orientation field.
             // 1: Horizontal (normal)
@@ -973,11 +984,8 @@ impl AFile {
 
             // 2. Binary Scan Fallback if still None or 1
             if e_orientation.is_none() || e_orientation == Some(1) {
-                if let Ok(mut f) = std::fs::File::open(file_path) {
-                    let mut buf = vec![0u8; 128 * 1024];
-                    use std::io::Read;
-                    let n = f.read(&mut buf).unwrap_or(0);
-                    if let Some(bo) = t_image::scan_orientation_binary(&buf[..n]) {
+                if let Some(hdr) = file_header_deref {
+                    if let Some(bo) = t_image::scan_orientation_binary(hdr) {
                         e_orientation = Some(bo as u32);
                     }
                 }
@@ -1091,11 +1099,7 @@ impl AFile {
                 || e_lens_make.is_none()
                 || e_lens_model.is_none()
             {
-                if let Ok(mut f) = std::fs::File::open(file_path) {
-                    let mut buf = vec![0u8; 128 * 1024];
-                    use std::io::Read;
-                    let n = f.read(&mut buf).unwrap_or(0);
-                    let data = &buf[..n];
+                if let Some(data) = file_header_deref {
 
                     if e_make.is_none() {
                         e_make = Self::scrape_ascii_from_tag(data, 0x010f);
@@ -1833,24 +1837,17 @@ impl AFile {
     /// fetch a file info from db by folder_id and file name
     pub fn fetch(folder_id: i64, file_path: &str) -> Result<Option<Self>, String> {
         let conn = open_conn()?;
+        Self::fetch_with_conn(&conn, folder_id, file_path)
+    }
 
-        // Prepare the SQL query by using the base query and adding conditions
+    pub fn fetch_with_conn(conn: &Connection, folder_id: i64, file_path: &str) -> Result<Option<Self>, String> {
         let sql = format!(
             "{} WHERE a.folder_id = ?1 AND a.name = ?2",
             Self::build_base_query()
         );
-
-        // Execute the query with folder_id and file name as parameters
-        let result = conn
-            .query_row(
-                &sql,
-                params![folder_id, t_utils::get_file_name(file_path)],
-                Self::from_row,
-            )
+        conn.query_row(&sql, params![folder_id, t_utils::get_file_name(file_path)], Self::from_row)
             .optional()
-            .map_err(|e| e.to_string())?;
-
-        Ok(result)
+            .map_err(|e| e.to_string())
     }
 
     fn build_file_type_condition(mask: i64) -> Option<String> {
@@ -1996,11 +1993,17 @@ impl AFile {
         value: &dyn rusqlite::ToSql,
     ) -> Result<usize, String> {
         let conn = open_conn()?;
+        Self::update_column_with_conn(&conn, file_id, column, value)
+    }
+
+    pub fn update_column_with_conn(
+        conn: &Connection,
+        file_id: i64,
+        column: &str,
+        value: &dyn rusqlite::ToSql,
+    ) -> Result<usize, String> {
         let query = format!("UPDATE afiles SET {} = ?1 WHERE id = ?2", column);
-        let result = conn
-            .execute(&query, params![value, file_id])
-            .map_err(|e| e.to_string())?;
-        Ok(result)
+        conn.execute(&query, params![value, file_id]).map_err(|e| e.to_string())
     }
 
     /// delete unseen files in an album (database only)
@@ -4679,29 +4682,70 @@ impl ALocation {
 }
 
 /// get connection to the db
-pub(crate) fn open_conn() -> Result<Connection, String> {
-    let path = t_storage::get_current_db_path()
-        .map_err(|e| format!("Failed to get the database file path: {}", e))?;
+static CONN_POOL: Mutex<Vec<(String, Connection)>> = Mutex::new(Vec::new());
 
-    let conn = Connection::open(&path)
-        .map_err(|e| format!("Failed to open database connection: {}", e))?;
+/// A pooled connection that returns to the global pool on Drop.
+pub(crate) struct PooledConn(Option<(String, Connection)>);
 
+impl Drop for PooledConn {
+    fn drop(&mut self) {
+        if let Some(entry) = self.0.take() {
+            if let Ok(mut pool) = CONN_POOL.lock() {
+                pool.push(entry);
+            }
+        }
+    }
+}
+
+impl Deref for PooledConn {
+    type Target = Connection;
+    fn deref(&self) -> &Connection { &self.0.as_ref().unwrap().1 }
+}
+
+impl DerefMut for PooledConn {
+    fn deref_mut(&mut self) -> &mut Connection { &mut self.0.as_mut().unwrap().1 }
+}
+
+fn setup_conn(conn: &Connection) -> Result<(), String> {
     conn.busy_timeout(Duration::from_secs(5))
         .map_err(|e| format!("Failed to set SQLite busy timeout: {}", e))?;
-
-    conn.query_row("PRAGMA journal_mode = WAL", [], |row| {
-        row.get::<_, String>(0)
-    })
-    .map_err(|e| format!("Failed to enable WAL mode: {}", e))?;
-
+    conn.query_row("PRAGMA journal_mode = WAL", [], |row| row.get::<_, String>(0))
+        .map_err(|e| format!("Failed to enable WAL mode: {}", e))?;
     conn.execute("PRAGMA synchronous = NORMAL", [])
         .map_err(|e| format!("Failed to set SQLite synchronous mode: {}", e))?;
-
-    // Enable foreign key constraints
     conn.execute("PRAGMA foreign_keys = ON", [])
         .map_err(|e| format!("Failed to enable foreign keys: {}", e))?;
+    Ok(())
+}
 
-    Ok(conn)
+fn create_conn() -> Result<(String, Connection), String> {
+    let path = t_storage::get_current_db_path()
+        .map_err(|e| format!("Failed to get the database file path: {}", e))?;
+    let conn = Connection::open(&path)
+        .map_err(|e| format!("Failed to open database connection: {}", e))?;
+    setup_conn(&conn)?;
+    Ok((path, conn))
+}
+
+pub(crate) fn clear_conn_pool() {
+    if let Ok(mut pool) = CONN_POOL.lock() {
+        pool.clear();
+    }
+}
+
+pub(crate) fn open_conn() -> Result<PooledConn, String> {
+    let current_path = t_storage::get_current_db_path()
+        .map_err(|e| format!("Failed to get the database file path: {}", e))?;
+    if let Ok(mut pool) = CONN_POOL.lock() {
+        // Only reuse connections pointing to the same DB file
+        while let Some((path, conn)) = pool.pop() {
+            if path == current_path {
+                return Ok(PooledConn(Some((path, conn))));
+            }
+            // Stale connection for a different library — drop it
+        }
+    }
+    Ok(PooledConn(Some(create_conn()?)))
 }
 
 /// create all tables if not exists

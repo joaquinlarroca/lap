@@ -2110,7 +2110,7 @@ fn normalize_format_label(label: &str) -> String {
     }
 }
 
-fn detect_label_from_header(header: &[u8], file_type: i64) -> Option<String> {
+pub(crate) fn detect_label_from_header(header: &[u8], file_type: i64) -> Option<String> {
     // JPEG
     if header.len() >= 3 && header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF {
         return Some("JPG".to_string());
@@ -2820,6 +2820,7 @@ pub async fn index_album_worker(
     thumbnail_size: u32,
     skip_file_path: Option<String>,
 ) -> Result<(), String> {
+    let scan_start = std::time::Instant::now();
     // Generate a unique scan time for this session (current timestamp)
     let current_scan_time = Utc::now().timestamp_millis();
     let processing_budget = ProcessingBudget::new();
@@ -3023,6 +3024,13 @@ pub async fn index_album_worker(
     // 5. Set album cover if needed (must happen before index_finished event)
     // so frontend refresh gets the latest cover_file_id immediately.
     let _ = Album::auto_set_cover(album_id);
+
+    // Summary log
+    let elapsed = scan_start.elapsed().as_secs_f64();
+    println!(
+        "[scan] album={} folder='{}' files={} time={:.1}s",
+        album_id, album.path, final_snapshot.processed, elapsed
+    );
 
     // 6. Emit finished
     app_handle

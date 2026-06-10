@@ -143,6 +143,7 @@ pub fn remove_library(id: &str) -> Result<(), String> {
 pub async fn switch_library(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
         t_config::switch_library(&id)?;
+        t_sqlite::clear_conn_pool();
         t_sqlite::create_db()?;
         Ok(())
     })
