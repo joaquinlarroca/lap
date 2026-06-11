@@ -452,7 +452,7 @@
     },
     "drop_import": {
       "title": "Import nicht möglich",
-      "message": "Bitte wähle zuerst einen Albumordner aus. Dateien können nur in einen bestimmten Albumordner importiert werden.",
+      "message": "Bitte wähle zuerst ein Album aus. Dateien können nur in ein bestimmtes Album importiert werden.",
       "success": "{count} Datei(en) importiert",
       "overlay": "Dateien zum Importieren ablegen",
       "no_files": "Keine Dateien konnten importiert werden. Stelle sicher, dass du Bilddateien ablegst."

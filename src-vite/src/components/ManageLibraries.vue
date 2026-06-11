@@ -117,7 +117,7 @@
       <div class="flex flex-col items-start justify-center p-2 w-2/3 min-h-[48px] rounded-box border border-transparent transition-colors" :class="showAddInput ? 'border-base-content/10 bg-base-100/20' : ''">
         <button
           v-if="!showAddInput" 
-          class="btn btn-primary btn-sm rounded-box"
+          class="t-button-primary"
           :disabled="isMaxLibraryReached || isRenaming"
           @click="showAddInput = true"
         >
@@ -138,16 +138,14 @@
               @keydown.esc.stop="cancelAddLibrary"
             />
             <button
-              class="px-3 py-1 rounded-box text-sm transition-colors shrink-0"
-              :class="isAddingLibrary ? 'text-base-content/30 cursor-default' : 'text-base-content/70 hover:bg-base-100/30 hover:text-base-content cursor-pointer'"
+              class="t-button-default"
               :disabled="isAddingLibrary"
               @click="cancelAddLibrary"
             >
               {{ $t('msgbox.cancel') }}
             </button>
             <button
-              class="px-3 py-1 rounded-box text-sm transition-colors shrink-0"
-              :class="canSubmitNewLibrary ? 'bg-primary text-primary-content hover:opacity-90 cursor-pointer' : 'bg-base-100/40 text-base-content/30 cursor-default'"
+              class="t-button-primary"
               :disabled="!canSubmitNewLibrary"
               @click="doAddLibrary"
             >
@@ -161,7 +159,8 @@
       </div>
 
       <button
-        class="px-4 py-1 rounded-box text-base-content/70 hover:bg-primary hover:text-base-100 cursor-pointer shrink-0"
+        class="t-button-primary"
+        :disabled="showAddInput"
         @click="clickOk"
       >
         {{ $t('msgbox.ok') }}

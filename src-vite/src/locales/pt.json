@@ -452,7 +452,7 @@
     },
     "drop_import": {
       "title": "Não é possível importar arquivos",
-      "message": "Selecione primeiro uma pasta de álbum. Os arquivos só podem ser importados para uma pasta de álbum específica.",
+      "message": "Selecione primeiro um álbum. Os arquivos só podem ser importados para um álbum específico.",
       "success": "{count} arquivo(s) importado(s)",
       "overlay": "Solte os arquivos para importar",
       "no_files": "Nenhum arquivo pôde ser importado. Certifique-se de soltar arquivos de imagem."

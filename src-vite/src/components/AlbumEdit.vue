@@ -136,16 +136,14 @@
     <!-- cancel and OK buttons -->
     <div class="mt-4 flex justify-end space-x-4">
       <button 
-        class="px-4 py-1 rounded-box hover:bg-base-100 hover:text-base-content cursor-pointer" 
+        class="t-button-default" 
         @click="clickCancel"
       >
         {{ $t('msgbox.cancel') }}
       </button>
       <button 
-        :class="[
-          'px-4 py-1 rounded-box transition-colors duration-200', 
-          inputNameValue.trim().length > 0 && selectedFolder.length > 0 && !isScanning ? 'hover:bg-primary hover:text-base-100 cursor-pointer bg-base-content/10' : 'text-base-content/20 cursor-default bg-base-content/5',
-        ]" 
+        class="t-button-primary"
+        :disabled="inputNameValue.trim().length === 0 || selectedFolder.length === 0"
         @click="clickOk"
       >
         {{ $t('msgbox.ok') }}

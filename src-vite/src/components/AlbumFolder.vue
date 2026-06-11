@@ -15,7 +15,7 @@
     >
       <div v-if="child.id != 0 || selection.folderPath.value == rootPath"
         :class="[
-          'mx-1 p-1 h-8 flex items-center rounded-box whitespace-nowrap cursor-pointer group border-2',
+          'p-1 h-8 flex items-center rounded-box whitespace-nowrap cursor-pointer group border-2',
           !selection.selected.value && selection.folderPath.value === child.path && !isRenamingFolder ? 'text-primary bg-base-100 hover:bg-base-100 border-transparent' : 'hover:text-base-content hover:bg-base-100/30 border-transparent',
           dropHighlightPath === child.path ? '!bg-primary/10 !border-primary/60' : '',
         ]"

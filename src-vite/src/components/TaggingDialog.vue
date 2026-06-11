@@ -62,12 +62,12 @@
     <!-- cancel and OK buttons -->
     <div class="mt-4 flex justify-end space-x-4">
       <button 
-        class="px-4 py-1 rounded-box hover:bg-base-100 hover:text-base-content cursor-pointer" 
+        class="t-button-default" 
         @click="clickCancel"
       >{{ $t('msgbox.cancel') }}</button>
       
       <button 
-        class="px-4 py-1 rounded-box hover:bg-primary hover:text-base-100 cursor-pointer" 
+        class="t-button-primary" 
         @click="clickOk"
       >{{ $t('msgbox.ok') }}</button>
 

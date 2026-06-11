@@ -1219,7 +1219,6 @@ const acceptDrops = computed(() =>
   tempViewMode.value === 'none'
   && config.main.sidebarIndex === 0
   && libConfig.album.id > 0
-  && !libConfig.album.selected
 );
 
 // DOM drop handler references (Windows/Linux — for cleanup in onBeforeUnmount)
@@ -2787,8 +2786,19 @@ onMounted( async() => {
     }
     const dt = e.dataTransfer;
     if (!dt) return;
-    const folderId = libConfig.album.folderId;
-    const folderPath = libConfig.album.folderPath;
+    let folderId = libConfig.album.folderId;
+    let folderPath = libConfig.album.folderPath;
+    // Resolve root folder ID when only album is selected (no subfolder)
+    if (!folderId && folderPath) {
+      const album = await getAlbum(libConfig.album.id);
+      if (album?.path) {
+        const resolved = await selectFolder(libConfig.album.id, album.path);
+        if (resolved?.id) {
+          folderId = resolved.id;
+          folderPath = resolved.path;
+        }
+      }
+    }
     if (!folderId || !folderPath) return;
     if (dt.files.length > 0) {
       const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB
