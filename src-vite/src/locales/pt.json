@@ -778,11 +778,6 @@
       "years": "há {count} anos"
     }
   },
-  "print_view": {
-    "title": "Imprimir...",
-    "loading": "Carregando visualização...",
-    "load_failed": "Falha ao carregar a imagem para impressão."
-  },
   "image_viewer": {
     "title": "Visualizador",
     "loading": "Carregando...",

@@ -778,11 +778,6 @@
       "years": "il y a {count} ans"
     }
   },
-  "print_view": {
-    "title": "Imprimer...",
-    "loading": "Chargement de l’aperçu...",
-    "load_failed": "Impossible de charger l’image pour l’impression."
-  },
   "image_viewer": {
     "title": "Visionneuse",
     "loading": "Chargement...",

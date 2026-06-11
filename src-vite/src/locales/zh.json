@@ -778,11 +778,6 @@
       "years": "{count} 年前"
     }
   },
-  "print_view": {
-    "title": "打印...",
-    "loading": "正在加载预览...",
-    "load_failed": "无法加载用于打印的图片。"
-  },
   "image_viewer": {
     "title": "图片查看器",
     "loading": "加载中...",

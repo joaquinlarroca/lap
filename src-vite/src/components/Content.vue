@@ -583,6 +583,17 @@
       <span>{{ $t('msgbox.drop_import.overlay') }}</span>
     </div>
   </div>
+
+  <Teleport to="body">
+    <div class="print-only">
+      <img
+        v-if="printImageSrc"
+        ref="printImageRef"
+        :src="printImageSrc"
+        alt=""
+      />
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -607,11 +618,11 @@ import { getShortcutLabel, matchesShortcut, ShortcutActionId, ShortcutPlatform }
 import { getSmartTagById, SMART_TAG_SEARCH_THRESHOLD } from '@/common/smartTags';
 import { getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
 import { isWin, isMac, setTheme, separator,
-         formatFileSize, formatDate, getCalendarDateRange, formatFolderBreadcrumb, getThumbnailDataUrl, getAssetSrc,
+         formatFileSize, formatDate, getCalendarDateRange, formatFolderBreadcrumb, getThumbnailDataUrl, getAssetSrc, getPreviewUrl,
          getCachedThumbnailDataUrl,
          clearCachedThumbnailDataUrl,
          extractFileName, combineFileName, getFolderPath, getFolderName, getSelectOptions, 
-         shortenFilename, getSlideShowInterval, getFullPath, normalizePathForCompare, isWithinRootPath } from '@/common/utils';
+         shortenFilename, getSlideShowInterval, getFullPath, normalizePathForCompare, isWithinRootPath, shouldUseBackendPreview } from '@/common/utils';
 
 import DropDownSelect from '@/components/DropDownSelect.vue';
 import ProgressBar from '@/components/ProgressBar.vue';
@@ -1712,7 +1723,7 @@ function handleItemAction(payload: { action: string, index: number }) {
 
   const actionMap = {
     'open': () => openImageViewer(selectedItemIndex.value, true),
-    'print': () => void openPrintWindow(selectedItemIndex.value),
+    'print': () => void printImage(selectedItemIndex.value),
     'edit': () => void openImageEditor(selectedItemIndex.value),
     'open-external-app': () => {
       void openSelectedFileInExternalApp();
@@ -2039,7 +2050,7 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     event.preventDefault();
     const selectedFile = fileList.value[selectedItemIndex.value];
     if (selectedFile?.file_type === 1 || selectedFile?.file_type === 3) {
-      void openPrintWindow(selectedItemIndex.value);
+      void printImage(selectedItemIndex.value);
     }
     return;
   }
@@ -2274,7 +2285,7 @@ const handleKeyDown = (e: any) => {
   } else if (matchesShortcut('file.print', event, shortcutPlatform)) {
     const file = fileList.value[selectedItemIndex.value];
     if (file && (file.file_type === 1 || file.file_type === 3)) {
-      void openPrintWindow(selectedItemIndex.value);
+      void printImage(selectedItemIndex.value);
     }
   } else if (matchesShortcut('file.reveal', event, shortcutPlatform)) {
     revealPath(fileList.value[selectedItemIndex.value].file_path);
@@ -5701,50 +5712,44 @@ async function openImageEditor(index: number) {
 
 }
 
-async function openPrintWindow(index: number) {
+const printImageSrc = ref('');
+const printImageRef = ref<HTMLImageElement | null>(null);
+
+async function waitForPrintImage() {
+  await nextTick();
+  const image = printImageRef.value;
+  if (!image) throw new Error('Print image element was not rendered');
+  if (image.complete) {
+    if (image.naturalWidth > 0) return;
+    throw new Error('Print image failed to load');
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    image.addEventListener('load', () => resolve(), { once: true });
+    image.addEventListener('error', () => reject(new Error('Print image failed to load')), { once: true });
+  });
+}
+
+async function printImage(index: number) {
   const selectedFile = fileList.value[index];
   if (!selectedFile?.file_path) return;
 
-  const webViewLabel = 'print';
-  const encodedFilePath = encodeURIComponent(selectedFile.file_path);
   const fileId = Number(selectedFile.id || 0);
   const fileType = Number(selectedFile.file_type || 1);
 
-  let printWindow = await WebviewWindow.getByLabel(webViewLabel);
-  if (!printWindow) {
-    printWindow = new WebviewWindow(webViewLabel, {
-      url: `/print-view?fileId=${fileId}&filePath=${encodedFilePath}&fileType=${fileType}`,
-      title: localeMsg.value.menu.file.print,
-      width: 960,
-      height: 720,
-      minWidth: 640,
-      minHeight: 480,
-      resizable: true,
-      maximizable: false,
-      visible: false,
-      transparent: true,
-      decorations: isMac,
-      ...(isMac && {
-        titleBarStyle: 'Overlay',
-        hiddenTitle: true,
-        minimizable: false,
-      }),
-    });
-
-    printWindow.once('tauri://error', (e) => {
-      console.error('Error creating print window:', e);
-    });
-    return;
+  try {
+    printImageSrc.value = shouldUseBackendPreview(selectedFile.file_path, fileType)
+      ? getPreviewUrl(fileId, selectedFile.file_path)
+      : getAssetSrc(selectedFile.file_path);
+    await waitForPrintImage();
+    window.addEventListener('afterprint', () => {
+      printImageSrc.value = '';
+    }, { once: true });
+    window.print();
+  } catch (error) {
+    printImageSrc.value = '';
+    console.error('Failed to prepare image for printing:', error);
   }
-
-  await printWindow.setTitle(localeMsg.value.menu.file.print);
-  await printWindow.emit('update-print', {
-    fileId,
-    filePath: selectedFile.file_path,
-    fileType,
-  });
-  await printWindow.show();
-  await printWindow.setFocus();
 }
 
 /// Dragging the film strip view splitter
@@ -5787,6 +5792,50 @@ defineExpose({
 </script>
 
 <style scoped>
+.print-only {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  :global(html),
+  :global(body) {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  :global(body > *:not(.print-only)) {
+    display: none !important;
+  }
+
+  .print-only {
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
+    display: grid !important;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #fff;
+    break-inside: avoid;
+  }
+
+  .print-only img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+  }
+}
+
 .drop-overlay {
   position: absolute;
   inset: 0;

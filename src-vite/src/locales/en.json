@@ -778,11 +778,6 @@
       "years": "{count} years ago"
     }
   },
-  "print_view": {
-    "title": "Print...",
-    "loading": "Loading preview...",
-    "load_failed": "Failed to load image for printing."
-  },
   "image_viewer": {
     "title": "Image viewer",
     "loading": "Loading...",

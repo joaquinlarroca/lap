@@ -778,11 +778,6 @@
       "years": "{count}년 전"
     }
   },
-  "print_view": {
-    "title": "인쇄...",
-    "loading": "미리 보기를 불러오는 중...",
-    "load_failed": "인쇄할 이미지를 불러오지 못했습니다."
-  },
   "image_viewer": {
     "title": "이미지 뷰어",
     "loading": "로딩 중...",

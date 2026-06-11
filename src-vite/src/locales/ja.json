@@ -778,11 +778,6 @@
       "years": "{count} 年前"
     }
   },
-  "print_view": {
-    "title": "印刷...",
-    "loading": "プレビューを読み込み中...",
-    "load_failed": "印刷用の画像を読み込めませんでした。"
-  },
   "image_viewer": {
     "title": "画像ビューア",
     "loading": "読み込み中...",

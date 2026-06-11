@@ -778,11 +778,6 @@
       "years": "vor {count} Jahren"
     }
   },
-  "print_view": {
-    "title": "Drucken...",
-    "loading": "Vorschau wird geladen...",
-    "load_failed": "Bild zum Drucken konnte nicht geladen werden."
-  },
   "image_viewer": {
     "title": "Bildbetrachter",
     "loading": "Lade...",
