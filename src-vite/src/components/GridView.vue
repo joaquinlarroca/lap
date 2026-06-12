@@ -84,7 +84,7 @@
           <span>{{ $t('tooltip.not_found.folder_files') }}</span>
           <span class="text-xs">{{ $t('tooltip.not_found.folder_files_hint') }}</span>
         </template>
-        <span v-else>{{ $t('tooltip.not_found.files') }}</span>
+        <span v-else>{{ emptyMessage || $t('tooltip.not_found.files') }}</span>
       </div>
     </div>
 
@@ -113,6 +113,7 @@ const props = withDefaults(defineProps<{
   folderExcluded?: boolean;
   selectMode?: boolean;
   contentReady?: boolean;
+  emptyMessage?: string;
   layoutVersion?: number;
 }>(), {
   selectedItemIndex: -1,
@@ -122,6 +123,7 @@ const props = withDefaults(defineProps<{
   folderExcluded: false,
   selectMode: false,
   contentReady: false,
+  emptyMessage: '',
   layoutVersion: 0,
 });
 

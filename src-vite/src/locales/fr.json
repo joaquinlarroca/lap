@@ -294,6 +294,12 @@
     "not_found": {
       "albums": "Aucun album trouvé. Ajoutez un dossier avec des images ou des vidéos",
       "files": "Aucun fichier trouvé",
+      "image_files": "Aucun fichier image trouvé",
+      "raw_files": "Aucun fichier RAW trouvé",
+      "video_files": "Aucun fichier vidéo trouvé",
+      "image_raw_files": "Aucun fichier image ou RAW trouvé",
+      "image_video_files": "Aucun fichier image ou vidéo trouvé",
+      "raw_video_files": "Aucun fichier RAW ou vidéo trouvé",
       "folder_files": "Ce dossier ne contient aucun fichier",
       "folder_files_hint": "Parcourez les sous-dossiers ou activez « Afficher les fichiers des sous-dossiers » dans les paramètres.",
       "folders": "Aucun dossier trouvé",

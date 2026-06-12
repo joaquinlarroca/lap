@@ -325,7 +325,7 @@ import { useI18n } from 'vue-i18n';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { config, libConfig } from '@/common/config';
 import { useToast } from '@/common/toast';
-import { isWin, isLinux, getSlideShowInterval } from '@/common/utils';
+import { isWin, isMac, isLinux, getSlideShowInterval } from '@/common/utils';
 import { getShortcutLabel, ShortcutActionId, ShortcutPlatform } from '@/common/shortcuts';
 
 import Image from '@/components/Image.vue';
@@ -364,7 +364,6 @@ import {
   IconLink,
   IconSplitOn,
 } from '@/common/icons';
-import { isMac } from '@/common/utils';
 import ContextMenu from '@/components/ContextMenu.vue';
 import iconLogo from '@/assets/images/icon.png';
 import { useFileMenuItems } from '@/common/fileMenu';
@@ -528,7 +527,7 @@ const toggleMaximizeWindow = () => {
   });
 };
 const closeWindow = () => desktopAppWindow?.close();
-const shortcutPlatform: ShortcutPlatform = isMac ? 'mac' : 'windows';
+const shortcutPlatform: ShortcutPlatform = isMac ? 'mac' : (isLinux ? 'linux' : 'windows');
 const shortcut = (actionId: ShortcutActionId) => getShortcutLabel(actionId, shortcutPlatform);
 const ratingShortcutLabel = computed(() => {
   const first = shortcut('meta.rating.clear');

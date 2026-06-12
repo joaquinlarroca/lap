@@ -294,6 +294,12 @@
     "not_found": {
       "albums": "未找到相册。添加包含图片或视频的文件夹",
       "files": "未找到文件",
+      "image_files": "未找到图片文件",
+      "raw_files": "未找到 RAW 文件",
+      "video_files": "未找到视频文件",
+      "image_raw_files": "未找到图片或 RAW 文件",
+      "image_video_files": "未找到图片或视频文件",
+      "raw_video_files": "未找到 RAW 或视频文件",
       "folder_files": "此文件夹中没有文件",
       "folder_files_hint": "尝试浏览子文件夹，或在设置中开启'显示子文件夹中的文件'以查看所有文件。",
       "folders": "未找到文件夹",

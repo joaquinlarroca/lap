@@ -294,6 +294,12 @@
     "not_found": {
       "albums": "No albums found. Add a folder with images or videos",
       "files": "No files found",
+      "image_files": "No image files found",
+      "raw_files": "No RAW files found",
+      "video_files": "No video files found",
+      "image_raw_files": "No image or RAW files found",
+      "image_video_files": "No image or video files found",
+      "raw_video_files": "No RAW or video files found",
       "folder_files": "This folder has no files",
       "folder_files_hint": "Try browsing subfolders, or enable 'Show files from subfolders' in Settings.",
       "folders": "No folders found",

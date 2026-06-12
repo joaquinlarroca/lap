@@ -294,6 +294,12 @@
     "not_found": {
       "albums": "Nenhum álbum encontrado. Adicione uma pasta com imagens ou vídeos",
       "files": "Nenhum arquivo encontrado",
+      "image_files": "Nenhum arquivo de imagem encontrado",
+      "raw_files": "Nenhum arquivo RAW encontrado",
+      "video_files": "Nenhum arquivo de vídeo encontrado",
+      "image_raw_files": "Nenhum arquivo de imagem ou RAW encontrado",
+      "image_video_files": "Nenhum arquivo de imagem ou vídeo encontrado",
+      "raw_video_files": "Nenhum arquivo RAW ou de vídeo encontrado",
       "folder_files": "Esta pasta não contém arquivos",
       "folder_files_hint": "Navegue pelas subpastas ou ative 'Mostrar arquivos de subpastas' nas Configurações.",
       "folders": "Nenhuma pasta encontrada",

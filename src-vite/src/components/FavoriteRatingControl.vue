@@ -14,12 +14,12 @@
       />
     </button>
     <div class="w-px h-4 bg-base-content/10 mx-1"></div>
-    <span class="mr-1 text-[11px] font-medium" :class="disabled ? 'text-base-content/30' : labelClass">
+    <!-- <span class="mr-1 text-[11px] font-medium" :class="disabled ? 'text-base-content/30' : labelClass">
       {{ $t('favorite.ratings') }}
-    </span>
+    </span> -->
     <span
       v-if="rating === null && !disabled"
-      class="mr-1 rounded border border-base-content/10 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-base-content/45"
+      class="mr-1 rounded border border-base-content/5 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-warning/70"
       :title="`${$t('favorite.ratings')}: ${$t('favorite.mixed')}`"
     >
       {{ $t('favorite.mixed') }}
@@ -102,7 +102,7 @@ function getRatingLabel(rating: number) {
 
 function getRatingIconClass(value: number) {
   if (props.disabled) return 'text-base-content/30';
-  if (props.rating === null) return 'text-base-content/30 hover:text-warning/70';
+  if (props.rating === null) return 'text-base-content/70 hover:text-warning/70';
   if (Number(props.rating || 0) >= value) return 'text-warning';
   return `${props.inactiveRatingClass} hover:text-warning/70`;
 }

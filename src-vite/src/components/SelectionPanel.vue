@@ -2,7 +2,7 @@
   <div class="w-full h-full rounded-box bg-base-200 flex flex-col overflow-hidden">
     <div class="flex items-center w-full shrink-0 px-2 mb-2">
       <div class="flex-1 pl-1">
-        <span class="text-[11px] font-bold uppercase tracking-[0.22em] text-base-content/35">
+        <span class="text-[11px] font-bold uppercase tracking-[0.22em] text-base-content/30">
           {{ $t('toolbar.filter.select_mode') }}
         </span>
       </div>
@@ -18,13 +18,12 @@
 
     <div class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
       <div class="border-t border-base-content/5 px-1 py-3 space-y-3">
-        <div class="flex items-center gap-2 text-base-content/70">
-          <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
+        <div class="flex items-center gap-2 text-base-content/30">
+          <span class="text-[10px] uppercase tracking-widest font-bold">
             {{ $t('info_panel.select_title') }}
           </span>
           <span
             class="ml-auto min-w-0 truncate text-right text-[11px] font-semibold"
-            :class="selectedCount > 0 ? 'text-base-content/60' : 'text-base-content/35'"
           >
             {{ selectionSummaryText }}
           </span>
@@ -55,7 +54,7 @@
           v-if="showSelectionLimitHint"
           class="mx-2 flex items-center gap-1.5 rounded-box bg-base-100/40 px-2 py-1.5 text-[11px] font-medium leading-snug text-base-content/50"
         >
-          <IconInformation class="h-3.5 w-3.5 shrink-0 text-base-content/35" />
+          <IconInformation class="h-3.5 w-3.5 shrink-0 text-base-content/30" />
           <span>{{ $t('info_panel.select_limit_hint', { count: selectionLimit }) }}</span>
         </div>
         <div v-if="selectedFiles.length > 0">
@@ -140,7 +139,7 @@
               :disabled="selectedCount === 0"
               :favorite-label="$t('info_panel.favorite_all')"
               :unfavorite-label="$t('info_panel.unfavorite_all')"
-              label-class="text-base-content/70"
+              label-class="text-base-content/30"
               inactive-rating-class="text-base-content/70"
               @favorite="(favorite) => $emit(favorite ? 'favoriteAll' : 'unfavoriteAll')"
               @rating="(rating) => $emit('setRatingAll', rating)"

@@ -294,6 +294,12 @@
     "not_found": {
       "albums": "앨범을 찾을 수 없습니다. 이미지나 비디오가 있는 폴더를 추가하세요",
       "files": "파일을 찾을 수 없습니다",
+      "image_files": "이미지 파일을 찾을 수 없습니다",
+      "raw_files": "RAW 파일을 찾을 수 없습니다",
+      "video_files": "비디오 파일을 찾을 수 없습니다",
+      "image_raw_files": "이미지 또는 RAW 파일을 찾을 수 없습니다",
+      "image_video_files": "이미지 또는 비디오 파일을 찾을 수 없습니다",
+      "raw_video_files": "RAW 또는 비디오 파일을 찾을 수 없습니다",
       "folder_files": "이 폴더에는 파일이 없습니다",
       "folder_files_hint": "하위 폴더를 찾아보거나 설정에서 '하위 폴더의 파일 표시'를 활성화하세요.",
       "folders": "폴더를 찾을 수 없습니다",

@@ -29,7 +29,7 @@
           
           <!-- languange -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/70">
+            <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.general.section_language') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
@@ -45,7 +45,7 @@
 
           <!-- appearance -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/70">
+            <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.general.section_appearance') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
@@ -76,7 +76,7 @@
 
           <!-- external app -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/70">
+            <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.image_view.section_external_apps') }}</span>
             </div>
             <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
@@ -93,15 +93,12 @@
                 >
                   {{ $t('settings.image_view.choose_app') }}
                 </button>
-                <button
-                  class="btn btn-sm btn-ghost "
-                  :disabled="!config.settings.externalImageAppPath"
-                  :title="$t('settings.image_view.clear_app')"
-                  :aria-label="$t('settings.image_view.clear_app')"
+                <TButton v-if="config.settings.externalImageAppPath"
+                  :icon="IconTrash"
+                  :buttonSize="'small'"
+                  :tooltip="$t('settings.image_view.clear_app')"
                   @click="clearExternalApp('image')"
-                >
-                  <IconClose class="w-3.5 h-3.5" />
-                </button>
+                />
               </div>
             </div>
             <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
@@ -118,22 +115,19 @@
                 >
                   {{ $t('settings.image_view.choose_app') }}
                 </button>
-                <button
-                  class="btn btn-sm btn-ghost"
-                  :disabled="!config.settings.externalVideoAppPath"
-                  :title="$t('settings.image_view.clear_app')"
-                  :aria-label="$t('settings.image_view.clear_app')"
+                <TButton v-if="config.settings.externalVideoAppPath"
+                  :icon="IconTrash"
+                  :buttonSize="'small'"
+                  :tooltip="$t('settings.image_view.clear_app')"
                   @click="clearExternalApp('video')"
-                >
-                  <IconClose class="w-3.5 h-3.5" />
-                </button>
+                />
               </div>
             </div>
           </div>
 
           <!-- display -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/70">
+            <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.general.section_interface') }}</span>
             </div>
             <div class="flex items-center justify-between p-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
@@ -163,7 +157,7 @@
 
           <!-- grid view -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/70">
+            <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.view.section_layout') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
@@ -220,7 +214,7 @@
 
           <!-- preview -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/70">
+            <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.image_view.section_viewing') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
@@ -278,7 +272,7 @@
 
           <!-- album -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/70">
+            <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_album') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
@@ -292,7 +286,7 @@
 
           <!-- sorting -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/70">
+            <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_sorting') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
@@ -326,7 +320,7 @@
 
           <!-- storage -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/70">
+            <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.database.section_storage') }}</span>
             </div>
 
@@ -393,7 +387,7 @@
 
           <!-- image search -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/70">
+            <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.image_search.search_image') }}</span>
             </div>
             <div class="flex items-start justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
@@ -443,7 +437,7 @@
 
           <!-- find similar -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/70">
+            <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.image_search.find_similar') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
@@ -459,7 +453,7 @@
 
           <!-- face recognition -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/70">
+            <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.face_recognition.title') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
@@ -498,7 +492,7 @@
             :key="section.key"
             class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm"
           >
-            <div class="flex items-center gap-2 text-base-content/70">
+            <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ section.title }}</span>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-1">
@@ -589,13 +583,14 @@ import {
 import { formatFileSize, isLinux, isMac, setTheme, SCALE_VALUES } from '@/common/utils';
 import { getShortcutLabels, ShortcutActionId, ShortcutPlatform } from '@/common/shortcuts';
 import { useToast } from '@/common/toast';
-import { IconClose, IconRestore } from '@/common/icons';
+import { IconTrash, IconRestore } from '@/common/icons';
 
 import TitleBar from '@/components/TitleBar.vue';
 import SettingsAbout from '@/components/SettingsAbout.vue';
 import MessageBox from '@/components/MessageBox.vue';
 import BackupDialog from '@/components/BackupDialog.vue';
 import RestoreDialog from '@/components/RestoreDialog.vue';
+import TButton from '@/components/TButton.vue';
 
 /// i18n
 const { locale, messages } = useI18n();

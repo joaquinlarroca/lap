@@ -1,6 +1,6 @@
 import { computed, markRaw, Ref } from 'vue';
 import { config } from '@/common/config';
-import { getShortcutLabel, ShortcutActionId, ShortcutPlatform } from '@/common/shortcuts';
+import { DEFAULT_PLATFORM, getShortcutLabel, ShortcutActionId } from '@/common/shortcuts';
 import {
   IconMonitor,
   IconPrint,
@@ -39,8 +39,7 @@ export const useFileMenuItems = (
     const videoAppName = String(config.settings.externalVideoAppName || '');
     const isImage = f.file_type === 1 || f.file_type === 3;
     const isVideo = f.file_type === 2;
-    const platform: ShortcutPlatform = isMac ? 'mac' : 'windows';
-    const shortcut = (actionId: ShortcutActionId) => getShortcutLabel(actionId, platform);
+    const shortcut = (actionId: ShortcutActionId) => getShortcutLabel(actionId, DEFAULT_PLATFORM);
 
     return [
       {

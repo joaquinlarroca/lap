@@ -199,6 +199,7 @@
                 :folderExcluded="isCurrentFolderExcluded"
                 :selectMode="selectMode"
                 :content-ready="contentReady"
+                :empty-message="emptyFilesMessage"
                 :layout-version="layoutVersion"
                 @item-clicked="handleItemClicked"
                 @item-dblclicked="handleItemDblClicked"
@@ -617,7 +618,7 @@ import { dragState } from '@/common/dragState';
 import { getShortcutLabel, matchesShortcut, ShortcutActionId, ShortcutPlatform } from '@/common/shortcuts';
 import { getSmartTagById, SMART_TAG_SEARCH_THRESHOLD } from '@/common/smartTags';
 import { getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
-import { isWin, isMac, setTheme, separator,
+import { isWin, isMac, isLinux, setTheme, separator,
          formatFileSize, formatDate, getCalendarDateRange, formatFolderBreadcrumb, getThumbnailDataUrl, getAssetSrc, getPreviewUrl,
          getCachedThumbnailDataUrl,
          clearCachedThumbnailDataUrl,
@@ -1193,7 +1194,7 @@ const visibleItemCount = computed(() => {
 const timelineData = ref<any[]>([]);  // timeline markers for scrollbar
 
 const toast = useToast();
-const shortcutPlatform: ShortcutPlatform = isMac ? 'mac' : 'windows';
+const shortcutPlatform: ShortcutPlatform = isMac ? 'mac' : (isLinux ? 'linux' : 'windows');
 const pendingFolderSyncs = new Map<number, Promise<any>>();
 const shortcut = (actionId: ShortcutActionId) => getShortcutLabel(actionId, shortcutPlatform);
 const ratingActions: Array<{ actionId: ShortcutActionId; rating: number }> = [
@@ -2129,7 +2130,7 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     return;
   }
 
-  if (matchesShortcut('view.first', event, shortcutPlatform)) {
+  if (!isMac && matchesShortcut('view.first', event, shortcutPlatform)) {
     event.preventDefault();
     checkUnsavedChanges(() => {
       selectedItemIndex.value = 0;
@@ -2137,7 +2138,7 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     return;
   }
 
-  if (matchesShortcut('view.last', event, shortcutPlatform)) {
+  if (!isMac && matchesShortcut('view.last', event, shortcutPlatform)) {
     event.preventDefault();
     checkUnsavedChanges(() => {
       selectedItemIndex.value = fileList.value.length - 1;
@@ -2147,7 +2148,9 @@ function handleLocalKeyDown(event: KeyboardEvent) {
 
   const handledKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter', 'Space', ' '];
 
-  handleQuickPreviewShortcut(event);
+  if (!isMac) {
+    handleQuickPreviewShortcut(event);
+  }
 
   if (handledKeys.includes(event.key)) {
     event.preventDefault();
@@ -2253,14 +2256,16 @@ const handleKeyDown = (e: any) => {
   }
 
   const event = e.payload;
-  const { key, shiftKey } = event;
+  const { key } = event;
 
   // Disable global shortcuts during slideshow except close for safety.
   if (isSlideShow.value && !matchesShortcut('view.close', event, shortcutPlatform)) {
     return;
   }
 
-  if (handleQuickPreviewShortcut(event)) {
+  // GridView prevents Space's default behavior before Content's window listener on macOS,
+  // so Quick Preview uses the App capture/global channel there.
+  if (isMac && handleQuickPreviewShortcut(event)) {
     return;
   }
 
@@ -2268,6 +2273,11 @@ const handleKeyDown = (e: any) => {
     openImageViewer(selectedItemIndex.value, true);
   } else if (matchesShortcut('file.copy', event, shortcutPlatform)) {
     clickCopyImage(fileList.value[selectedItemIndex.value].file_path);
+  // macOS handles Cmd+Arrow in App's capture listener before the content DOM handler.
+  } else if (isMac && matchesShortcut('view.first', event, shortcutPlatform)) {
+    keyActions.Home();
+  } else if (isMac && matchesShortcut('view.last', event, shortcutPlatform)) {
+    keyActions.End();
   } else if (matchesShortcut('file.editImage', event, shortcutPlatform)) {
     const file = fileList.value[selectedItemIndex.value];
     if (file && (file.file_type === 1 || file.file_type === 3)) {
@@ -2275,7 +2285,7 @@ const handleKeyDown = (e: any) => {
     }
   } else if (matchesShortcut('file.trash', event, shortcutPlatform)) {
     openTrashMsgbox();
-  } else if ((keyActions as any)[key]) {
+  } else if (key === 'ArrowUp' || key === 'ArrowDown') {
     (keyActions as any)[key]();
   }
 };
@@ -5247,6 +5257,21 @@ function normalizeFileTypeMask(mask: number): number {
   const normalized = mask & FILE_TYPE_ALL_MASK;
   return normalized === 0 || normalized === FILE_TYPE_ALL_MASK ? 0 : normalized;
 }
+
+const emptyFilesMessage = computed(() => {
+  const notFound = localeMsg.value.tooltip.not_found;
+  const mask = normalizeFileTypeMask(Number(config.search.fileType || 0));
+  const messageKey = {
+    [FILE_TYPE_IMAGE]: 'image_files',
+    [FILE_TYPE_VIDEO]: 'video_files',
+    [FILE_TYPE_RAW]: 'raw_files',
+    [FILE_TYPE_IMAGE | FILE_TYPE_VIDEO]: 'image_video_files',
+    [FILE_TYPE_IMAGE | FILE_TYPE_RAW]: 'image_raw_files',
+    [FILE_TYPE_VIDEO | FILE_TYPE_RAW]: 'raw_video_files',
+  }[mask];
+
+  return (messageKey && notFound[messageKey]) || notFound.files;
+});
 
 const fileTypeSelectedValues = computed(() => {
   const mask = normalizeFileTypeMask(Number(config.search.fileType || 0));

@@ -63,7 +63,7 @@
       <div
         v-if="statusBadges.length > 0"
         class="pointer-events-none absolute inset-x-0 top-0 h-16"
-      />
+      ></div>
       <div
         v-if="statusBadges.length > 0"
         class="pointer-events-none absolute left-0.5 top-0.5 z-10 flex max-w-[calc(100%-2.5rem)] flex-wrap gap-1"
@@ -464,7 +464,7 @@ const statusBadges = computed<ThumbnailBadge[]>(() => {
   if (isVideo) {
     badges.push({
       key: 'duration',
-      icon: IconClock,
+      // icon: IconClock,
       label: formatDuration(props.file.duration),
     });
   }

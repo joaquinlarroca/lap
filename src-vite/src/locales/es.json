@@ -294,6 +294,12 @@
     "not_found": {
       "albums": "No se encontraron álbumes. Añade una carpeta con imágenes o videos",
       "files": "No se encontraron archivos",
+      "image_files": "No se encontraron archivos de imagen",
+      "raw_files": "No se encontraron archivos RAW",
+      "video_files": "No se encontraron archivos de video",
+      "image_raw_files": "No se encontraron archivos de imagen ni RAW",
+      "image_video_files": "No se encontraron archivos de imagen ni video",
+      "raw_video_files": "No se encontraron archivos RAW ni de video",
       "folder_files": "Esta carpeta no contiene archivos",
       "folder_files_hint": "Explore las subcarpetas o active 'Mostrar archivos de subcarpetas' en Configuración.",
       "folders": "No se encontraron carpetas",

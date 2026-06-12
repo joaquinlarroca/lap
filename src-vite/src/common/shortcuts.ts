@@ -85,8 +85,13 @@ export interface ShortcutEventLike {
   shiftKey?: boolean;
 }
 
-export const DEFAULT_PLATFORM: ShortcutPlatform =
-  typeof navigator !== 'undefined' && /mac/i.test(navigator.platform) ? 'mac' : 'windows';
+export const DEFAULT_PLATFORM: ShortcutPlatform = (() => {
+  if (typeof navigator === 'undefined') return 'windows';
+  const platform = `${navigator.platform || ''} ${navigator.userAgent || ''}`;
+  if (/mac/i.test(platform)) return 'mac';
+  if (/linux|x11/i.test(platform)) return 'linux';
+  return 'windows';
+})();
 
 export const SHORTCUTS: readonly ShortcutDefinition[] = [
   {

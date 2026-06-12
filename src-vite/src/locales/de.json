@@ -294,6 +294,12 @@
     "not_found": {
       "albums": "Keine Alben gefunden. Fügen Sie einen Ordner mit Bildern oder Videos hinzu",
       "files": "Keine Dateien gefunden",
+      "image_files": "Keine Bilddateien gefunden",
+      "raw_files": "Keine RAW-Dateien gefunden",
+      "video_files": "Keine Videodateien gefunden",
+      "image_raw_files": "Keine Bild- oder RAW-Dateien gefunden",
+      "image_video_files": "Keine Bild- oder Videodateien gefunden",
+      "raw_video_files": "Keine RAW- oder Videodateien gefunden",
       "folder_files": "Dieser Ordner enthält keine Dateien",
       "folder_files_hint": "Durchsuchen Sie Unterordner oder aktivieren Sie 'Dateien aus Unterordnern anzeigen' in den Einstellungen.",
       "folders": "Keine Ordner gefunden",

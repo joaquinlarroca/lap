@@ -11,11 +11,10 @@
     />
     <div
       v-else
-      class="h-10 shrink-0 flex items-center justify-between px-4 select-none"
-      :class="isMac ? 'pl-20' : ''"
+      class="h-10 shrink-0 flex items-center justify-center px-20 select-none"
       data-tauri-drag-region
     >
-      <div class="text-sm font-medium text-base-content/70 truncate">
+      <div class="min-w-0 max-w-full text-center text-sm font-medium text-base-content/70 truncate">
         {{ $t('msgbox.image_editor.title') }} - {{ shortenFilename(fileInfo?.name || '', 32) }}
       </div>
     </div>
@@ -510,7 +509,7 @@ import { useRouter } from 'vue-router';
 import { useUIStore } from '@/stores/uiStore';
 import { useI18n } from 'vue-i18n';
 import { config } from '@/common/config';
-import { isWin, isMac, isLinux, setTheme, SCALE_VALUES, getFolderPath, getFileExtension, shortenFilename, getFullPath, combineFileName, getSelectOptions, getAssetSrc, getPreviewUrl, getThumbUrl, shouldUseBackendPreview } from '@/common/utils';
+import { isWin, isLinux, setTheme, SCALE_VALUES, getFolderPath, getFileExtension, shortenFilename, getFullPath, combineFileName, getSelectOptions, getAssetSrc, getPreviewUrl, getThumbUrl, shouldUseBackendPreview } from '@/common/utils';
 import { editImage, checkFileExists, getFileInfo } from '@/common/api';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { emit as tauriEmit, listen } from '@tauri-apps/api/event';
