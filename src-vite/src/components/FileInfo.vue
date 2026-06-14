@@ -3,7 +3,7 @@
     <!-- Header & Close -->
     <div class="flex items-center w-full shrink-0 px-2 mb-2">
       <div class="flex-1 pl-1">
-        <span class="text-[11px] font-bold uppercase tracking-[0.22em] text-base-content/30">
+        <span class="text-sm font-semibold text-base-content/70">
           {{ $t('file_info.title') }}
         </span>
       </div>

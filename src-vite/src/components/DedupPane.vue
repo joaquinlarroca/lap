@@ -2,7 +2,9 @@
   <div class="w-full h-full rounded-box bg-base-200 flex flex-col overflow-hidden">
     <div class="flex items-center w-full shrink-0 px-2 mb-2">
       <div class="flex-1 pl-1">
-        <span class="text-[11px] font-bold uppercase tracking-[0.22em] text-base-content/30">{{ $t('info_panel.dedup.title') }}</span>
+        <span class="text-sm font-semibold text-base-content/70">
+          {{ $t('info_panel.dedup.title') }}
+        </span>
       </div>
       <div class="mt-2 flex items-center gap-1">
         <TButton
@@ -48,11 +50,11 @@
       <template v-else>
 
         <div class="border-t border-base-content/5 px-1 py-3 space-y-3">
-          <div class="flex items-center gap-2 text-base-content/30">
-            <span class="text-[10px] uppercase tracking-widest font-bold">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
               {{ $t('info_panel.dedup.groups_title') }}
             </span>
-            <span class="ml-auto min-w-0 truncate text-right text-[11px] font-semibold">
+            <span class="ml-auto min-w-0 truncate text-right text-[11px] font-semibold text-base-content/70">
               {{ $t('info_panel.dedup.duplicate_files_summary', {
                 count: totalDuplicateFileCount.toLocaleString(),
                 size: formatFileSize(totalReclaimableBytes),
@@ -99,11 +101,11 @@
         </div>
 
         <div v-if="activeGroup" class="border-t border-base-content/5 px-1 py-4 space-y-3">
-          <div class="flex items-center gap-2 text-base-content/30">
-            <span class="text-[10px] uppercase tracking-widest font-bold">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
               {{ $t('info_panel.dedup.actions_title') }}
             </span>
-            <span class="ml-auto min-w-0 truncate text-right text-[11px] font-semibold">
+            <span class="ml-auto min-w-0 truncate text-right text-[11px] font-semibold text-base-content/70">
               <template v-if="selectedDeleteCount > 0">
                 {{ $t('toolbar.filter.select_count', { count: selectedDeleteCount.toLocaleString() }) }}
                 ({{ formatFileSize(selectedDeleteBytes) }})
@@ -152,7 +154,7 @@
                 <div class="min-w-0 flex-1">
                   <div class="text-xs font-semibold text-base-content/70 truncate">{{ activeGroup.keepItem.file.name }}</div>
                   <div
-                    class="text-[11px] text-base-content/70 truncate"
+                    class="text-[11px] text-base-content/30 truncate"
                     :title="formatDedupFolderPath(activeGroup.keepItem.file)"
                   >
                     {{ formatDedupFolderPath(activeGroup.keepItem.file) }}

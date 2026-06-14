@@ -2,7 +2,7 @@
   <div class="w-full h-full rounded-box bg-base-200 flex flex-col overflow-hidden">
     <div class="flex items-center w-full shrink-0 px-2 mb-2">
       <div class="flex-1 pl-1">
-        <span class="text-[11px] font-bold uppercase tracking-[0.22em] text-base-content/30">
+        <span class="text-sm font-semibold text-base-content/70">
           {{ $t('toolbar.filter.select_mode') }}
         </span>
       </div>
@@ -18,12 +18,12 @@
 
     <div class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
       <div class="border-t border-base-content/5 px-1 py-3 space-y-3">
-        <div class="flex items-center gap-2 text-base-content/30">
-          <span class="text-[10px] uppercase tracking-widest font-bold">
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
             {{ $t('info_panel.select_title') }}
           </span>
           <span
-            class="ml-auto min-w-0 truncate text-right text-[11px] font-semibold"
+            class="ml-auto min-w-0 truncate text-right text-[11px] font-semibold text-base-content/70"
           >
             {{ selectionSummaryText }}
           </span>
@@ -103,13 +103,13 @@
               :disabled="selectedCount === 0"
               @click="$emit('moveToFolder')"
             >
-              {{ $t('menu.file.move_to') }}
+              {{ $t('menu.file.move_to_folder') }}
             </PanelActionButton>
             <PanelActionButton
               :disabled="selectedCount === 0"
               @click="$emit('copyToFolder')"
             >
-              {{ $t('menu.file.copy_to') }}
+              {{ $t('menu.file.copy_to_folder') }}
             </PanelActionButton>
             <PanelActionButton
               :icon="IconTrash"
