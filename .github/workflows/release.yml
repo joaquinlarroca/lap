@@ -119,6 +119,8 @@ jobs:
 
       - name: Download AI Models
         shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: bash scripts/download_models.sh
 
       - name: Clear cached Linux bundle artifacts

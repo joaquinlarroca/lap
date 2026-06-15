@@ -110,6 +110,8 @@ jobs:
 
       - name: Download AI Models (Windows)
         shell: pwsh
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: .\scripts\download_models.ps1
 
       - name: Force app frontend build command (Windows CI only)

@@ -106,6 +106,8 @@ jobs:
 
       - name: Download AI Models
         shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: bash scripts/download_models.sh
 
       - name: Clear cached macOS bundle artifacts
@@ -253,6 +255,8 @@ jobs:
 
       - name: Download AI Models (Windows)
         shell: pwsh
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: .\scripts\download_models.ps1
 
       - name: Force app frontend build command (Windows CI only)
@@ -397,6 +401,8 @@ jobs:
 
       - name: Download AI Models
         shell: bash
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: bash scripts/download_models.sh
 
       - name: Clear cached Linux bundle artifacts
