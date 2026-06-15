@@ -104,7 +104,15 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: src-vite
 
+      - name: Cache AI Models
+        id: cache-ai-models
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/resources/models
+          key: ${{ runner.os }}-models-${{ hashFiles('scripts/download_models.sh', 'scripts/download_models.ps1') }}
+
       - name: Download AI Models
+        if: steps.cache-ai-models.outputs.cache-hit != 'true'
         shell: bash
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -253,7 +261,15 @@ jobs:
         working-directory: src-vite
         run: pnpm install --frozen-lockfile
 
+      - name: Cache AI Models
+        id: cache-ai-models
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/resources/models
+          key: ${{ runner.os }}-models-${{ hashFiles('scripts/download_models.sh', 'scripts/download_models.ps1') }}
+
       - name: Download AI Models (Windows)
+        if: steps.cache-ai-models.outputs.cache-hit != 'true'
         shell: pwsh
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -399,7 +415,15 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: src-vite
 
+      - name: Cache AI Models
+        id: cache-ai-models
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/resources/models
+          key: ${{ runner.os }}-models-${{ hashFiles('scripts/download_models.sh', 'scripts/download_models.ps1') }}
+
       - name: Download AI Models
+        if: steps.cache-ai-models.outputs.cache-hit != 'true'
         shell: bash
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
