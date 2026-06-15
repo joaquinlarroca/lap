@@ -1,4 +1,5 @@
 #include <gtk/gtk.h>
+#include <gio/gio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -94,4 +95,70 @@ bool lap_copy_files_and_image_to_clipboard(
     gtk_clipboard_set_can_store(clipboard, targets, target_count);
     gtk_clipboard_store(clipboard);
     return true;
+}
+
+unsigned char *lap_get_clipboard_file_paths(size_t *out_len) {
+    if (out_len) *out_len = 0;
+
+    GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+    gchar **uris = gtk_clipboard_wait_for_uris(clipboard);
+    if (!uris) return NULL;
+
+    GString *paths = g_string_new(NULL);
+    for (gchar **uri = uris; *uri; uri++) {
+        GFile *file = g_file_new_for_uri(*uri);
+        if (!file) continue;
+
+        gchar *path = g_file_get_path(file);
+        if (path && *path) {
+            if (paths->len > 0) g_string_append_c(paths, '\n');
+            g_string_append(paths, path);
+        }
+
+        g_free(path);
+        g_object_unref(file);
+    }
+    g_strfreev(uris);
+
+    if (paths->len == 0) {
+        g_string_free(paths, TRUE);
+        return NULL;
+    }
+
+    if (out_len) *out_len = paths->len;
+    return (unsigned char *)g_string_free(paths, FALSE);
+}
+
+unsigned char *lap_get_clipboard_png(size_t *out_len) {
+    if (out_len) *out_len = 0;
+
+    GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+    GdkPixbuf *pixbuf = gtk_clipboard_wait_for_image(clipboard);
+    if (!pixbuf) return NULL;
+
+    gchar *buffer = NULL;
+    gsize buffer_len = 0;
+    GError *error = NULL;
+    gboolean ok = gdk_pixbuf_save_to_buffer(
+        pixbuf,
+        &buffer,
+        &buffer_len,
+        "png",
+        &error,
+        NULL
+    );
+    g_object_unref(pixbuf);
+
+    if (!ok || !buffer || buffer_len == 0) {
+        if (error) g_error_free(error);
+        g_free(buffer);
+        return NULL;
+    }
+
+    if (out_len) *out_len = (size_t)buffer_len;
+    return (unsigned char *)buffer;
+}
+
+void lap_clipboard_free(void *ptr) {
+    g_free(ptr);
 }

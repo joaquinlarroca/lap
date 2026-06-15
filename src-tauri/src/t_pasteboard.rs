@@ -109,29 +109,24 @@ pub async fn copy_files_and_image(
     file_paths: &[String],
     image_bytes: Option<&[u8]>,
 ) -> Result<(), String> {
-    let mut clipboard =
-        arboard::Clipboard::new().map_err(|e| format!("Failed to open clipboard: {}", e))?;
+    use clipboard_win::{Clipboard, Setter, formats::FileList};
+
+    let _clipboard =
+        Clipboard::new_attempts(10).map_err(|e| format!("Failed to open clipboard: {}", e))?;
+    clipboard_win::raw::empty().map_err(|e| format!("Failed to clear clipboard: {}", e))?;
+
+    FileList
+        .write_clipboard(file_paths)
+        .map_err(|e| format!("Failed to copy files to clipboard: {}", e))?;
+
     if let Some(bytes) = image_bytes {
-        let image = image::load_from_memory(bytes)
-            .map_err(|e| format!("Failed to decode clipboard preview: {}", e))?
-            .to_rgba8();
-        let (width, height) = image.dimensions();
-        clipboard
-            .set_image(arboard::ImageData {
-                width: width as usize,
-                height: height as usize,
-                bytes: std::borrow::Cow::Owned(image.into_raw()),
-            })
-            .map_err(|e| format!("Failed to copy image to clipboard: {}", e))?;
-    } else {
-        clipboard
-            .clear()
-            .map_err(|e| format!("Failed to clear clipboard: {}", e))?;
+        let png_format = clipboard_win::register_format("PNG")
+            .ok_or_else(|| "Failed to register PNG clipboard format".to_string())?;
+        clipboard_win::raw::set_without_clear(png_format.get(), bytes)
+            .map_err(|e| format!("Failed to copy image preview to clipboard: {}", e))?;
     }
-    clipboard
-        .set()
-        .file_list(file_paths)
-        .map_err(|e| format!("Failed to copy files to clipboard: {}", e))
+
+    Ok(())
 }
 
 #[cfg(target_os = "linux")]
@@ -205,4 +200,80 @@ pub async fn copy_files_and_image(
         Ok(false) => Err("Failed to write files and image to clipboard".to_string()),
         Err(_) => Err("Clipboard update was cancelled".to_string()),
     }
+}
+
+#[cfg(target_os = "linux")]
+fn get_clipboard_file_paths_sync() -> Vec<String> {
+    use std::ffi::c_void;
+
+    unsafe extern "C" {
+        fn lap_get_clipboard_file_paths(out_len: *mut usize) -> *mut u8;
+        fn lap_clipboard_free(ptr: *mut c_void);
+    }
+
+    let mut len = 0usize;
+    let ptr = unsafe { lap_get_clipboard_file_paths(&mut len) };
+    if ptr.is_null() || len == 0 {
+        return Vec::new();
+    }
+
+    let bytes = unsafe { std::slice::from_raw_parts(ptr, len) }.to_vec();
+    unsafe { lap_clipboard_free(ptr.cast()) };
+
+    String::from_utf8(bytes)
+        .ok()
+        .map(|text| {
+            text.lines()
+                .map(str::trim)
+                .filter(|line| !line.is_empty())
+                .map(ToOwned::to_owned)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+#[cfg(target_os = "linux")]
+fn get_clipboard_png_sync() -> Option<Vec<u8>> {
+    use std::ffi::c_void;
+
+    unsafe extern "C" {
+        fn lap_get_clipboard_png(out_len: *mut usize) -> *mut u8;
+        fn lap_clipboard_free(ptr: *mut c_void);
+    }
+
+    let mut len = 0usize;
+    let ptr = unsafe { lap_get_clipboard_png(&mut len) };
+    if ptr.is_null() || len == 0 {
+        return None;
+    }
+
+    let bytes = unsafe { std::slice::from_raw_parts(ptr, len) }.to_vec();
+    unsafe { lap_clipboard_free(ptr.cast()) };
+    Some(bytes)
+}
+
+#[cfg(target_os = "linux")]
+pub struct ClipboardImportData {
+    pub file_paths: Vec<String>,
+    pub png: Option<Vec<u8>>,
+}
+
+#[cfg(target_os = "linux")]
+pub async fn get_clipboard_import_data(
+    app_handle: &tauri::AppHandle,
+) -> Result<ClipboardImportData, String> {
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    app_handle
+        .run_on_main_thread(move || {
+            let payload = ClipboardImportData {
+                file_paths: get_clipboard_file_paths_sync(),
+                png: get_clipboard_png_sync(),
+            };
+            let _ = sender.send(payload);
+        })
+        .map_err(|e| format!("Failed to schedule clipboard read: {}", e))?;
+
+    receiver
+        .await
+        .map_err(|_| "Clipboard read was cancelled".to_string())
 }

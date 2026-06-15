@@ -969,7 +969,29 @@ fn import_clipboard_file(
 }
 
 #[tauri::command]
-pub fn has_importable_clipboard() -> bool {
+pub async fn has_importable_clipboard(app_handle: tauri::AppHandle) -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        let Ok(clipboard_data) = crate::t_pasteboard::get_clipboard_import_data(&app_handle).await else {
+            return false;
+        };
+
+        if clipboard_data
+            .file_paths
+            .iter()
+            .any(|path| {
+                std::path::Path::new(path).is_file()
+                    && t_utils::get_file_type(path).is_some()
+            })
+        {
+            return true;
+        }
+
+        if clipboard_data.png.is_some() {
+            return true;
+        }
+    }
+
     let Ok(mut clipboard) = arboard::Clipboard::new() else {
         return false;
     };
@@ -993,7 +1015,65 @@ pub fn has_importable_clipboard() -> bool {
 /// metadata. Fall back to a PNG only when the clipboard contains pixels
 /// without a backing file, such as a screenshot.
 #[tauri::command]
-pub fn import_clipboard(folder_id: i64, folder_path: &str) -> Result<Vec<AFile>, String> {
+pub async fn import_clipboard(
+    app_handle: tauri::AppHandle,
+    folder_id: i64,
+    folder_path: &str,
+) -> Result<Vec<AFile>, String> {
+    #[cfg(target_os = "linux")]
+    {
+        let clipboard_data = crate::t_pasteboard::get_clipboard_import_data(&app_handle).await?;
+        if !clipboard_data.file_paths.is_empty() {
+            let mut imported = Vec::new();
+            for path in clipboard_data
+                .file_paths
+                .iter()
+                .map(std::path::Path::new)
+                .filter(|path| path.is_file())
+            {
+                let supported = path
+                    .to_str()
+                    .and_then(t_utils::get_file_type)
+                    .is_some();
+                if !supported {
+                    continue;
+                }
+                match import_clipboard_file(path, folder_id, folder_path) {
+                    Ok(file) => imported.push(file),
+                    Err(error) => eprintln!(
+                        "Failed to import clipboard file {}: {}",
+                        path.display(),
+                        error
+                    ),
+                }
+            }
+            if !imported.is_empty() {
+                return Ok(imported);
+            }
+        }
+
+        if let Some(png) = clipboard_data.png {
+            let new_path = t_utils::save_bytes_to_folder(&png, "image/png", folder_path)
+                .ok_or_else(|| "Failed to save clipboard image".to_string())?;
+            let file_type = t_utils::get_file_type(&new_path).ok_or_else(|| {
+                let _ = std::fs::remove_file(&new_path);
+                format!("Unsupported file type: {}", new_path)
+            })?;
+            let now = chrono::Utc::now().timestamp_millis();
+            return match AFile::add_to_db(folder_id, &new_path, file_type, now) {
+                Ok((file, _)) => Ok(vec![file]),
+                Err(error) => {
+                    let _ = std::fs::remove_file(&new_path);
+                    Err(error)
+                }
+            };
+        }
+
+        if !clipboard_data.file_paths.is_empty() {
+            return Err("Clipboard does not contain supported image files".to_string());
+        }
+    }
+
     let mut clipboard =
         arboard::Clipboard::new().map_err(|e| format!("Failed to open clipboard: {}", e))?;
     if let Ok(file_paths) = clipboard.get().file_list() {
