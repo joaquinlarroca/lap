@@ -202,7 +202,7 @@ import {
   IconStack,
   IconArrowDown,
   IconCalendarDay,
-  IconPhotoAll,
+  IconFolders,
 } from '@/common/icons';
 
 const isSwitchingLibrary = ref(false);
@@ -330,7 +330,7 @@ const {
 
 // buttons
 const buttons = computed(() =>  [
-  { icon: IconPhotoAll, component: Library, text: localeMsg.value.sidebar.album },
+  { icon: IconFolders, component: Library, text: localeMsg.value.sidebar.album },
   { icon: IconHeart, component: Favorite, text: localeMsg.value.sidebar.favorite },
   { icon: IconSearch, component: ImageSearch, text: localeMsg.value.sidebar.search },
   { icon: IconCalendarDay, component: Calendar, text: localeMsg.value.sidebar.calendar },

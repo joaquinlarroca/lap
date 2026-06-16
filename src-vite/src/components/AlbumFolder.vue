@@ -304,7 +304,6 @@ const getMenuItemsForFolder = async (folder: any) => {
     },
     {
       label: t('menu.file.move_copy'),
-      icon: IconMove,
       disabled: isRoot,
       children: [
         {

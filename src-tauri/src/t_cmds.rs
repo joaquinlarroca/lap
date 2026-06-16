@@ -969,10 +969,12 @@ fn import_clipboard_file(
 }
 
 #[tauri::command]
-pub async fn has_importable_clipboard(app_handle: tauri::AppHandle) -> bool {
+pub async fn has_importable_clipboard(
+    _app_handle: tauri::AppHandle,
+) -> bool {
     #[cfg(target_os = "linux")]
     {
-        let Ok(clipboard_data) = crate::t_pasteboard::get_clipboard_import_data(&app_handle).await else {
+        let Ok(clipboard_data) = crate::t_pasteboard::get_clipboard_import_data(&_app_handle).await else {
             return false;
         };
 
@@ -1016,13 +1018,13 @@ pub async fn has_importable_clipboard(app_handle: tauri::AppHandle) -> bool {
 /// without a backing file, such as a screenshot.
 #[tauri::command]
 pub async fn import_clipboard(
-    app_handle: tauri::AppHandle,
+    _app_handle: tauri::AppHandle,
     folder_id: i64,
     folder_path: &str,
 ) -> Result<Vec<AFile>, String> {
     #[cfg(target_os = "linux")]
     {
-        let clipboard_data = crate::t_pasteboard::get_clipboard_import_data(&app_handle).await?;
+        let clipboard_data = crate::t_pasteboard::get_clipboard_import_data(&_app_handle).await?;
         if !clipboard_data.file_paths.is_empty() {
             let mut imported = Vec::new();
             for path in clipboard_data

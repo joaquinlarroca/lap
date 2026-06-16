@@ -148,7 +148,7 @@
 
           <!-- toggle dedup panel -->
           <TButton
-            :icon="IconSimilar"
+            :icon="IconPhotoAll"
             :tooltip="$t('toolbar.tooltip.open_dedup')"
             :selected="isDedupPanelOpen"
             :disabled="isScanStreamingMode"
@@ -646,10 +646,9 @@ import SliderInput from '@/components/SliderInput.vue';
 import StatusBar from '@/components/StatusBar.vue';
 
 import {
-  IconPhotoAll,
+  IconFolders,
   IconHeart,
   IconFolderFavorite,
-  IconFileArrowRight,
   IconFiles,
   IconFolder,
   IconTag,
@@ -666,7 +665,6 @@ import {
   IconSelection,
   IconInformation,
   IconPhotoSearch,
-  IconSimilar,
   IconPersonSearch,
   IconFolderSearch,
   IconCalendarMonth,
@@ -676,6 +674,7 @@ import {
   IconDownload,
   IconPrev,
   IconAdd,
+  IconPhotoAll,
 } from '@/common/icons';
 
 const thumbnailPlaceholder = new URL('@/assets/images/image-file.png', import.meta.url).href;
@@ -1858,8 +1857,8 @@ const currentTitleIcon = computed(() => {
         switch (config.main.sidebarIndex) {
           case 0:
             switch (libConfig.album.id) {
-              case 0: return IconPhotoAll;
-              default: return libConfig.album.selected ? IconPhotoAll : IconFolder;
+              case 0: return IconFolders;
+              default: return libConfig.album.selected ? IconFolders : IconFolder;
             }
           case 1:
             switch (libConfig.favorite.folderId) {

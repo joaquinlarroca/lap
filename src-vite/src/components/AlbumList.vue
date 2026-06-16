@@ -95,7 +95,7 @@
                 class="w-full h-full flex items-center justify-center cursor-pointer"
                 @click="clickAlbum(album)"
               >
-                <IconPhotoAll class="w-6 h-6" />
+                <IconFolders class="w-6 h-6" />
               </div>
             </div>
 
@@ -103,9 +103,14 @@
               <div class="overflow-hidden whitespace-pre text-ellipsis">
                 {{ album.name }}
               </div>
-              <div v-if="album.description" class="text-xs overflow-hidden whitespace-nowrap text-ellipsis">
-                {{ album.description }}
-              </div>
+              <div
+                v-if="album.is_accessible === false"
+                class="text-xs overflow-hidden whitespace-nowrap text-ellipsis text-warning/70"
+              >{{ $t('album.folder_unavailable.title') }}</div>
+              <div
+                v-else-if="album.description"
+                class="text-xs overflow-hidden whitespace-nowrap text-ellipsis text-base-content/50"
+              >{{ album.description }}</div>
             </div>
 
             <!-- Right side: Count and Status Icons -->
@@ -238,7 +243,7 @@ import {
   IconUpdateOff,
   IconUpdateDot,
   IconRight,
-  IconPhotoAll,
+  IconFolders,
   IconClipboard,
   IconFolderError,
 } from '@/common/icons';
