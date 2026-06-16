@@ -8,6 +8,7 @@
       class="flex-1 overflow-x-hidden overflow-y-auto rounded-box select-none outline-none"
       @keydown="handleLocalAlbumListKeyDown"
       @mousedown.capture="focusAlbumListRoot"
+      @drop.stop
     >
       
       <!-- title -->
@@ -580,6 +581,7 @@ onBeforeUnmount(() => {
   if (unlistenIndexProgress) unlistenIndexProgress();
   if (unlistenIndexFinished) unlistenIndexFinished();
   if (unlistenAlbumsRefreshed) unlistenAlbumsRefreshed();
+  uiStore.removeInputHandler('AlbumListDrag');
 });
 
 /// Add a new album
@@ -919,10 +921,13 @@ const clickFinalSubFolder = async (albumIdVal: number, folderPathVal: string) =>
 /// drag albums to change their display order
 const onDragStart = () => {
   isDragging.value = true;
+  uiStore.removeInputHandler('AlbumListDrag');
+  uiStore.pushInputHandler('AlbumListDrag');
 };
 
 const onDragEnd = async () => {
   isDragging.value = false;
+  setTimeout(() => uiStore.removeInputHandler('AlbumListDrag'), 0);
   
   // update the display order of albums
   for (let i = 0; i < albums.value.length; i++) {

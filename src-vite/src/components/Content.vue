@@ -1366,7 +1366,8 @@ function hasExternalDragIntent(event: DragEvent) {
 }
 
 function isInternalReorderActive() {
-  return uiStore.isInputActive('ManageLibraries');
+  return uiStore.isInputActive('ManageLibraries')
+    || uiStore.isInputActive('AlbumListDrag');
 }
 
 async function resolveAlbumImportDestination(albumId: number, folderPath?: string) {
