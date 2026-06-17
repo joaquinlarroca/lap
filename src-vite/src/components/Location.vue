@@ -9,7 +9,7 @@
       </div>
     </div>
 
-    <!-- location -->
+    <!-- list view -->
     <div v-if="locations.length > 0" class="flex-1 overflow-x-hidden overflow-y-auto">
       <ul>
         <li v-for="location in sortedLocations">

@@ -1305,6 +1305,19 @@ export async function getLocationInfo(sort = 0) {
   return null;
 }
 
+// get GPS coordinates aggregated into grid cells for heatmap rendering
+export async function getGpsHeatmapPoints() {
+  try {
+    const points = await invoke('get_gps_heatmap_points');
+    if (points) {
+      return points;
+    }
+  } catch (error) {
+    console.error('Failed to get GPS heatmap points:', error);
+  }
+  return [];
+}
+
 // settings
 
 // get package info

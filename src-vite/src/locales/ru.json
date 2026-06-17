@@ -9,6 +9,7 @@
     "location": "Место",
     "people": "Люди",
     "camera": "Камеры",
+    "map": "Карта",
     "settings": "Настройки"
   },
   "album": {
@@ -781,7 +782,12 @@
     "zoom_out": "Зум -",
     "zoom_center": "Центр",
     "standard": "Стандарт",
-    "satellite": "Спутник"
+    "satellite": "Спутник",
+    "heatmap": "Тепловая карта",
+    "photo_count": "{count} фото",
+    "no_photos_in_view": "В этой области нет фото",
+    "photos_in_view": "{count} фото в этой области",
+    "photos_in_view_limited": "Показаны первые {count} фото - увеличьте масштаб для уточнения"
   },
   "format": {
     "year": "yyyy",

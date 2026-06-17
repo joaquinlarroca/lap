@@ -9,6 +9,7 @@
     "location": "Ort",
     "people": "Personen",
     "camera": "Kameras",
+    "map": "Karte",
     "settings": "Optionen"
   },
   "album": {
@@ -781,7 +782,12 @@
     "zoom_out": "Zoom -",
     "zoom_center": "Zentrieren",
     "standard": "Standard",
-    "satellite": "Satellit"
+    "satellite": "Satellit",
+    "heatmap": "Heatmap",
+    "photo_count": "{count} Fotos",
+    "no_photos_in_view": "Keine Fotos in diesem Bereich",
+    "photos_in_view": "{count} Fotos in diesem Bereich",
+    "photos_in_view_limited": "Zeige die ersten {count} Fotos - zum Eingrenzen weiter zoomen"
   },
   "format": {
     "year": "yyyy",

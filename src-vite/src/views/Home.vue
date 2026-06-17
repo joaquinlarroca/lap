@@ -140,7 +140,8 @@
           showDesktopTitleBar ? 'rounded-tl-box' : '',
         ]"
       >
-        <Content ref="contentRef" :key="libraryVersion" :titlebar="buttons[config.main.sidebarIndex].text" :libraryEmpty="libraryEmpty"/>
+        <MapHeatmapView v-if="config.main.sidebarIndex === MAP_SIDEBAR_INDEX" />
+        <Content v-else ref="contentRef" :key="libraryVersion" :titlebar="buttons[config.main.sidebarIndex].text" :libraryEmpty="libraryEmpty"/>
       </div>
     </div>
 
@@ -183,6 +184,7 @@ import Calendar from '@/components/Calendar.vue';
 import Location from '@/components/Location.vue';
 import Person from '@/components/Person.vue';
 import Camera from '@/components/Camera.vue';
+import MapHeatmapView from '@/components/MapHeatmapView.vue';
 import TitleBar from '@/components/TitleBar.vue';
 import TButton from '@/components/TButton.vue';
 import Content from '@/components/Content.vue';
@@ -203,6 +205,7 @@ import {
   IconArrowDown,
   IconCalendarDay,
   IconFolders,
+  IconMapDefault,
 } from '@/common/icons';
 
 const isSwitchingLibrary = ref(false);
@@ -338,7 +341,11 @@ const buttons = computed(() =>  [
   { icon: IconPerson, component: Person, text: localeMsg.value.sidebar.people, hidden: !config.settings.face.enabled },
   { icon: IconLocation, component: Location, text: localeMsg.value.sidebar.location },
   { icon: IconCameraAperture, component: Camera, text: localeMsg.value.sidebar.camera },
+  { icon: IconMapDefault, component: null, text: localeMsg.value.sidebar.map },
 ]);
+
+// dedicated full-area heatmap view, shown instead of Content
+const MAP_SIDEBAR_INDEX = 8;
 
 const visibleButtons = computed(() =>
   buttons.value
@@ -352,8 +359,8 @@ watch(() => config.settings.face.enabled, (enabled) => {
   }
 });
 
-watch(() => config.libraryChangedVersion, () => {
-  appConfig.value = getAppConfig();
+watch(() => config.libraryChangedVersion, async () => {
+  appConfig.value = await getAppConfig();
 });
 
 const libraryMenuItems = computed(() => {
@@ -558,6 +565,12 @@ const onManageLibrariesUpdated = async () => {
 // click sidebar
 function clickSidebar(index: number) {
   if (libraryEmpty.value && index !== 0) return;
+  if (index === MAP_SIDEBAR_INDEX) {
+    // map view has no filter panel - give it the full content area
+    showPanel.value = false;
+    config.main.sidebarIndex = index;
+    return;
+  }
   if (config.main.sidebarIndex === index) {
     showPanel.value = !showPanel.value;
   } else {
