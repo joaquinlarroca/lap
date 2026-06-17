@@ -915,6 +915,7 @@
       "show_button_text": "Afficher les libellés de la barre latérale",
       "show_tool_tip": "Conseils des boutons",
       "show_status_bar": "Barre d'état",
+      "auto_check_updates": "Rechercher automatiquement les mises à jour",
       "show_map": "Afficher carte",
       "show_map_hint": "Nécessite un accès à internet",
       "debug_mode": "Mode débogage"

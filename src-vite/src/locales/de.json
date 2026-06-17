@@ -915,6 +915,7 @@
       "show_button_text": "Seitenleisten-Beschriftungen anzeigen",
       "show_tool_tip": "Button-Hinweise",
       "show_status_bar": "Statusleiste",
+      "auto_check_updates": "Automatisch nach Updates suchen",
       "show_map": "Karte anzeigen",
       "show_map_hint": "Benötigt Internetzugang",
       "debug_mode": "Debug-Modus"

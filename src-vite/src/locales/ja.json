@@ -915,6 +915,7 @@
       "show_button_text": "サイドバーのラベルを表示",
       "show_tool_tip": "ボタンのヒント",
       "show_status_bar": "ステータスバー",
+      "auto_check_updates": "更新を自動確認",
       "show_map": "地図を表示",
       "show_map_hint": "インターネット接続が必要です",
       "debug_mode": "デバッグモード"

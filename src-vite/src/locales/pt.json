@@ -915,6 +915,7 @@
       "show_button_text": "Mostrar rótulos da barra lateral",
       "show_tool_tip": "Dicas dos botões",
       "show_status_bar": "Barra de status",
+      "auto_check_updates": "Verificar atualizações automaticamente",
       "show_map": "Mostrar mapa",
       "show_map_hint": "Requer acesso à internet",
       "debug_mode": "Modo debug"

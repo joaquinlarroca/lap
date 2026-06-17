@@ -148,6 +148,12 @@
               </div>
               <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.showStatusBar" />
             </div>
+            <div class="flex items-center justify-between p-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.general.auto_check_updates') }}</div>
+              </div>
+              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.autoCheckUpdates" />
+            </div>
           </div>
 
         </div>
@@ -1219,6 +1225,9 @@ watch(() => config.settings.showToolTip, (newValue) => {
 });
 watch(() => config.settings.showStatusBar, (newValue) => {
   emit('settings-showStatusBar-changed', newValue);
+});
+watch(() => config.settings.autoCheckUpdates, (newValue) => {
+  emit('settings-autoCheckUpdates-changed', newValue);
 });
 // watch(() => config.settings.showComment, (newValue) => {
 //   emit('settings-showComment-changed', newValue);

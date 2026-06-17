@@ -437,7 +437,9 @@ onMounted(async () => {
     console.error('Failed to get app name:', e);
   }
 
-  void checkForUpdates(false);
+  if (config.settings.autoCheckUpdates !== false) {
+    void checkForUpdates(false);
+  }
 });
 
 onBeforeUnmount(() => {

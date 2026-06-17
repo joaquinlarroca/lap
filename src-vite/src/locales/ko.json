@@ -915,6 +915,7 @@
       "show_button_text": "사이드바 레이블 표시",
       "show_tool_tip": "버튼 팁 표시",
       "show_status_bar": "상태 표시줄",
+      "auto_check_updates": "업데이트 자동 확인",
       "show_map": "지도 표시",
       "show_map_hint": "인터넷 연결이 필요합니다",
       "debug_mode": "디버그 모드"

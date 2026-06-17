@@ -915,6 +915,7 @@
       "show_button_text": "Show sidebar labels",
       "show_tool_tip": "Show button tips",
       "show_status_bar": "Show status bar",
+      "auto_check_updates": "Auto-check for updates",
       "show_map": "Show map",
       "show_map_hint": "Requires internet access",
       "debug_mode": "Debug mode"

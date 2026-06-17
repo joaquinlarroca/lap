@@ -915,6 +915,7 @@
       "show_button_text": "显示侧边栏标签",
       "show_tool_tip": "显示按钮提示",
       "show_status_bar": "显示状态栏",
+      "auto_check_updates": "自动检查更新",
       "show_map": "显示地图",
       "show_map_hint": "需要互联网连接",
       "debug_mode": "调试模式"
